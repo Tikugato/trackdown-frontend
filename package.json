@@ -1,0 +1,27 @@
+{
+  "name": "trackdown-frontend",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vue-tsc --build && vite build",
+    "preview": "vite preview",
+    "check": "vue-tsc --build",
+    "deploy": "npm run build && wrangler deploy"
+  },
+  "dependencies": {
+    "@fontsource/prompt": "^5.2.5",
+    "@fontsource/pt-sans": "^5.2.5",
+    "@fontsource/syne-mono": "^5.2.5",
+    "vue": "^3.5.13",
+    "vue-router": "^4.5.0"
+  },
+  "devDependencies": {
+    "@types/node": "^26.3.0",
+    "@vitejs/plugin-vue": "^6.0.0",
+    "typescript": "~5.7.3",
+    "vite": "^7.0.0",
+    "vue-tsc": "^2.2.0",
+    "wrangler": "^4.0.0"
+  }
+}
