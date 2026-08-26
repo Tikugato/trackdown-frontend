@@ -1,3 +1,4 @@
+import type { Titled } from '@/game/track'
 import type {
   Account,
   DailyDistribution,
@@ -53,10 +54,10 @@ export async function countSongs(
   return (await response.json()) as Record<string, number>
 }
 
-export async function suggestTitles(query: string, signal: AbortSignal): Promise<string[]> {
+export async function suggestTitles(query: string, signal: AbortSignal): Promise<Titled[]> {
   const response = await fetch(`${apiOrigin}/autocomplete?q=${encodeURIComponent(query)}`, { signal })
   if (!response.ok) return []
-  return (await response.json()) as string[]
+  return (await response.json()) as Titled[]
 }
 
 async function loadJSON<T>(path: string, query: URLSearchParams, signal: AbortSignal): Promise<T> {

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref, useId, watch } from 'vue'
+import { trackLabel, type Titled } from '@/game/track'
 import { suggestTitles } from '@/net/http'
 
 const props = defineProps<{ locked: boolean; live: boolean; suggest: boolean }>()
@@ -10,7 +11,7 @@ const DEBOUNCE_MS = 150
 
 const box = ref<HTMLInputElement | null>(null)
 const text = ref('')
-const options = ref<string[]>([])
+const options = ref<Titled[]>([])
 const cursor = ref(-1)
 const listId = useId()
 
@@ -56,7 +57,7 @@ function move(step: number): void {
 }
 
 function submit(): void {
-  const chosen = cursor.value >= 0 ? options.value[cursor.value] : text.value
+  const chosen = cursor.value >= 0 ? options.value[cursor.value]?.title : text.value
   if (!chosen?.trim() || props.locked) return
   emit('guess', chosen)
   text.value = ''
@@ -64,8 +65,8 @@ function submit(): void {
   cursor.value = -1
 }
 
-function pick(option: string): void {
-  text.value = option
+function pick(option: Titled): void {
+  text.value = option.title
   cursor.value = -1
   submit()
 }
@@ -82,13 +83,14 @@ onBeforeUnmount(() => {
       <li
         v-for="(option, index) in options"
         :id="`${listId}-${index}`"
-        :key="option"
+        :key="trackLabel(option)"
         role="option"
         :aria-selected="index === cursor"
         :class="{ on: index === cursor }"
         @mousedown.prevent="pick(option)"
       >
-        {{ option }}
+        <span>{{ option.title }}</span>
+        <span class="artist">{{ option.artist }}</span>
       </li>
     </ul>
 
@@ -129,6 +131,10 @@ onBeforeUnmount(() => {
 }
 
 .options li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0 var(--space-8);
   padding: var(--space-4) var(--space-8);
   border-top: 1px solid var(--rule);
   cursor: pointer;
@@ -139,6 +145,11 @@ onBeforeUnmount(() => {
 .options li:hover {
   color: var(--ink);
   background: var(--ground-sunk);
+}
+
+.artist {
+  font-size: var(--text-micro);
+  color: var(--ink-faint);
 }
 
 input {
