@@ -15,6 +15,12 @@ const emit = defineEmits<{ replay: [] }>()
 const known = computed(() => props.reveal ?? null)
 const shape = computed(() => props.mask ?? null)
 
+const fullTitle = computed(() => {
+  const track = known.value
+  if (!track) return ''
+  return track.subtitle ? `${track.title} ${track.subtitle}` : track.title
+})
+
 const countLabel = computed(() => {
   const words = shape.value
   if (!words) return ''
@@ -47,7 +53,9 @@ const countLabel = computed(() => {
       <p v-if="!known && note" class="note">{{ note }}</p>
 
       <template v-if="known">
-        <p class="title" :title="known.title">{{ known.title }}</p>
+        <p class="title" :title="fullTitle">
+          {{ known.title }}<span v-if="known.subtitle" class="sub">{{ known.subtitle }}</span>
+        </p>
         <p v-if="known.artist" class="artist" :title="known.artist">{{ known.artist }}</p>
         <p v-if="known.mapper" class="mapper" :title="known.mapper">
           <span class="by">Mapped by</span>
@@ -176,6 +184,13 @@ const countLabel = computed(() => {
   font-size: var(--text-heading);
   font-weight: 500;
   line-height: 1.15;
+}
+
+.sub {
+  font-family: var(--font-body);
+  font-size: var(--text-small);
+  color: var(--ink-soft);
+  margin-left: var(--space-8);
 }
 
 .artist {

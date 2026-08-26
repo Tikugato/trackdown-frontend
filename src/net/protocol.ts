@@ -149,6 +149,7 @@ export type Mask = { title: number; artist?: number }
 
 export type Reveal = {
   title: string
+  subtitle?: string
   artist?: string
   mapper?: string
   cover_url?: string
