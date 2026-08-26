@@ -246,7 +246,6 @@ async function share(): Promise<void> {
     <p class="when">{{ dateLabel }} <span class="next">next one at {{ nextLabel }}</span></p>
 
     <TrackPlate
-      :mask="state.mask"
       :reveal="state.track"
       :blurred="revealed.get('cover')"
       :status="playback"

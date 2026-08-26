@@ -189,7 +189,6 @@ export type DailyState = {
   done: boolean
   clip_url: string
   clip_length_ms: number
-  mask?: Mask
   rating?: RatingKind
   hint_kinds: HintKind[]
   hints: Partial<Record<HintKind, string>>
