@@ -306,8 +306,12 @@ function nextCommandId(): string {
 function enter(message: ClientMessage): Promise<void> {
   return new Promise<void>((resolve, reject) => {
     const id = nextCommandId()
+    settleEntry(new Error('cancelled by a newer request'), entering?.id)
     entering = { id, resolve, reject }
-    socket.send(message, id)
+    if (!socket.send(message, id)) {
+      settleEntry(new Error('the connection dropped'), id)
+      return
+    }
     setTimeout(() => settleEntry(new Error('the server did not answer'), id), ENTRY_TIMEOUT_MS)
   })
 }
@@ -358,20 +362,17 @@ export function startGame(): void {
 export function say(text: string): boolean {
   const clean = text.trim()
   if (!clean) return false
-  if (!round.value) {
-    socket.send({ type: 'chat', data: { text: clean } })
-    return true
-  }
+  if (!round.value) return socket.send({ type: 'chat', data: { text: clean } })
   if (guessLocked.value) return false
+  if (!socket.send({ type: 'guess', data: { text: clean } })) return false
   guessLocked.value = true
   setTimeout(() => (guessLocked.value = false), GUESS_LOCKOUT_MS)
-  socket.send({ type: 'guess', data: { text: clean } })
   return true
 }
 
 export function askHint(kind: HintKind): void {
   if (hints.has(kind) || hintsMissing.has(kind)) return
-  socket.send({ type: 'hint', data: { kind } })
+  if (!socket.send({ type: 'hint', data: { kind } })) return
   setTimeout(() => {
     if (!hints.has(kind)) hintsMissing.add(kind)
   }, HINT_WAIT_MS)
@@ -379,8 +380,7 @@ export function askHint(kind: HintKind): void {
 
 export function voteSkip(): void {
   if (skipVoted.value) return
-  skipVoted.value = true
-  socket.send({ type: 'skip', data: {} })
+  skipVoted.value = socket.send({ type: 'skip', data: {} })
 }
 
 bind()

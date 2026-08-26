@@ -4,6 +4,7 @@ import { closedReason, code, connect, joinLobby } from '@/store/game'
 import { forgetLobby, lobbyCode, playerName } from '@/store/session'
 
 export async function enterLobby(target: string): Promise<string> {
+  if (code.value === target) return ''
   try {
     await connect()
     await joinLobby(target)
@@ -28,7 +29,7 @@ export function useLobbyEntry(target: string) {
       await router.replace(`/?join=${target}`)
       return
     }
-    if (code.value !== target) failure.value = await enterLobby(target)
+    failure.value = await enterLobby(target)
     joining.value = false
   })
 

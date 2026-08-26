@@ -12,6 +12,7 @@ const SYNC_INTERVAL_MS = 20000
 const BACKOFF_MS = [500, 1000, 2000, 4000, 8000]
 
 type Listener = (data: never, id?: string) => void
+type Waiter = { resolve: () => void; reject: (reason: Error) => void }
 
 export const connectionStatus = ref<ConnectionStatus>('offline')
 
@@ -19,7 +20,7 @@ const listeners = new Map<ServerMessageType, Set<Listener>>()
 const reconnected = new Set<() => void>()
 
 let socket: WebSocket | null = null
-let opening: Promise<void> | null = null
+let waiters: Waiter[] = []
 let syncTimer: ReturnType<typeof setInterval> | null = null
 let retryTimer: ReturnType<typeof setTimeout> | null = null
 let attempt = 0
@@ -41,66 +42,75 @@ export function onReconnected(handler: () => void): () => void {
   return () => void reconnected.delete(handler)
 }
 
-export function send(message: ClientMessage, id?: string): void {
-  if (socket?.readyState !== WebSocket.OPEN) return
+export function send(message: ClientMessage, id?: string): boolean {
+  if (socket?.readyState !== WebSocket.OPEN) return false
   socket.send(JSON.stringify(id ? { ...message, id } : message))
+  return true
 }
 
 export function connect(name: string): Promise<void> {
   if (socket?.readyState === WebSocket.OPEN && connectionStatus.value === 'ready') return Promise.resolve()
-  opening ??= open(name)
-  return opening
+  const waiting = new Promise<void>((resolve, reject) => waiters.push({ resolve, reject }))
+  if (!socket && !retryTimer) open(name)
+  return waiting
 }
 
 export function disconnect(): void {
   closing = true
   everWelcomed = false
+  attempt = 0
   stopTimers()
   socket?.close()
   socket = null
-  opening = null
   resetClock()
   connectionStatus.value = 'offline'
+  settleWaiters(new Error('disconnected'))
 }
 
-function open(name: string): Promise<void> {
+function settleWaiters(reason: Error | null): void {
+  const held = waiters
+  waiters = []
+  for (const waiter of held) {
+    if (reason) waiter.reject(reason)
+    else waiter.resolve()
+  }
+}
+
+function open(name: string): void {
   closing = false
   connectionStatus.value = everWelcomed ? 'reconnecting' : 'connecting'
 
-  return new Promise<void>((resolve, reject) => {
-    const next = new WebSocket(socketUrl)
-    socket = next
-    let helloSentAt = Date.now()
+  const next = new WebSocket(socketUrl)
+  socket = next
+  let helloSentAt = Date.now()
 
-    const stopWaiting = on('welcome', (data) => {
-      stopWaiting()
-      adoptIdentity({ id: data.player_id, name: data.name, kind: data.account, avatar: data.avatar ?? '', resume: data.resume })
-      recordSample(helloSentAt, data.server_time_ms, Date.now())
-      connectionStatus.value = 'ready'
-      attempt = 0
-      startSync()
-      if (everWelcomed) reconnected.forEach((handler) => handler())
-      everWelcomed = true
-      resolve()
-    })
+  const stopWaiting = on('welcome', (data) => {
+    stopWaiting()
+    adoptIdentity({ id: data.player_id, name: data.name, kind: data.account, avatar: data.avatar ?? '', resume: data.resume })
+    recordSample(helloSentAt, data.server_time_ms, Date.now())
+    connectionStatus.value = 'ready'
+    attempt = 0
+    startSync()
+    if (everWelcomed) reconnected.forEach((handler) => handler())
+    everWelcomed = true
+    settleWaiters(null)
+  })
 
-    next.addEventListener('open', () => {
-      helloSentAt = Date.now()
-      sayHello(name)
-    })
-    next.addEventListener('message', (event: MessageEvent<string>) => dispatch(event.data))
-    next.addEventListener('close', () => {
-      stopWaiting()
-      stopTimers()
-      opening = null
-      if (socket === next) socket = null
-      if (closing) return
-      if (everWelcomed) scheduleRetry(name)
-      else {
-        connectionStatus.value = 'offline'
-        reject(new Error('could not reach the server'))
-      }
-    })
+  next.addEventListener('open', () => {
+    helloSentAt = Date.now()
+    sayHello(name)
+  })
+  next.addEventListener('message', (event: MessageEvent<string>) => dispatch(event.data))
+  next.addEventListener('close', () => {
+    stopWaiting()
+    stopTimers()
+    if (socket === next) socket = null
+    if (closing) return
+    if (everWelcomed) scheduleRetry(name)
+    else {
+      connectionStatus.value = 'offline'
+      settleWaiters(new Error('could not reach the server'))
+    }
   })
 }
 
@@ -116,12 +126,13 @@ function scheduleRetry(name: string): void {
   attempt += 1
   retryTimer = setTimeout(() => {
     retryTimer = null
-    opening = open(name).catch(() => undefined)
+    open(name)
   }, wait)
 }
 
 function dispatch(raw: string): void {
-  const envelope = JSON.parse(raw) as { type: ServerMessageType; id?: string; data?: unknown }
+  const envelope = parse(raw)
+  if (!envelope) return
   if (envelope.type === 'pong') {
     const data = envelope.data as { client_time_ms: number; server_time_ms: number }
     recordSample(data.client_time_ms, data.server_time_ms, Date.now())
@@ -131,6 +142,14 @@ function dispatch(raw: string): void {
   if (!bucket) return
   for (const handler of [...bucket]) {
     ;(handler as (data: unknown, id?: string) => void)(envelope.data, envelope.id)
+  }
+}
+
+function parse(raw: string): { type: ServerMessageType; id?: string; data?: unknown } | null {
+  try {
+    return JSON.parse(raw) as { type: ServerMessageType; id?: string; data?: unknown }
+  } catch {
+    return null
   }
 }
 
