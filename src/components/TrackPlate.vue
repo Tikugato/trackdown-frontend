@@ -60,7 +60,7 @@ const countLabel = computed(() => {
           target="_blank"
           rel="noopener noreferrer"
         >
-          Open on {{ known.source_name }}
+          View in {{ known.source_name }}
         </a>
       </template>
 
