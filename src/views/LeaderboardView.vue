@@ -130,7 +130,7 @@ function widen(): void {
 <template>
   <section class="intro">
     <h1>Leaderboards</h1>
-    <p>Everyone who plays logged in shows up here. Narrow it down to the rules you care about.</p>
+    <p>Everyone who plays logged in shows up here.</p>
   </section>
 
   <nav class="boards">
