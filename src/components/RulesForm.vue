@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import ModeCards from '@/components/ModeCards.vue'
 import PoolPicker from '@/components/PoolPicker.vue'
 import SettingChoice from '@/components/SettingChoice.vue'
 import { keepFilters } from '@/game/filters'
@@ -40,29 +41,7 @@ function setRounds(rounds: number): void {
 </script>
 
 <template>
-  <fieldset class="modes">
-    <legend>How a round is won</legend>
-    <div class="cards">
-      <label v-for="option in MODES" :key="option.value" class="mode" :class="{ on: settings.mode === option.value }">
-        <input
-          type="radio"
-          name="mode"
-          :checked="settings.mode === option.value"
-          :value="option.value"
-          @change="setMode(option.value)"
-        />
-        <svg class="glyph" viewBox="0 0 32 32" aria-hidden="true">
-          <path v-if="option.value === 'bolt'" class="fill" d="M18 3 L7 18 L14 18 L12 29 L25 13 L17 13 Z" />
-          <template v-else>
-            <circle class="stroke" cx="16" cy="16" r="11" />
-            <path class="stroke" d="M16 8 L16 16 L22 19" />
-          </template>
-        </svg>
-        <span class="name">{{ option.label }}</span>
-        <span class="blurb">{{ option.blurb }}</span>
-      </label>
-    </div>
-  </fieldset>
+  <ModeCards legend="How a round is won" :options="MODES" :model-value="settings.mode" @update:model-value="setMode" />
 
   <div class="settings">
     <SettingChoice
@@ -128,97 +107,6 @@ function setRounds(rounds: number): void {
 h2 {
   margin-top: var(--space-32);
   margin-bottom: var(--space-12);
-}
-
-.modes {
-  border: 0;
-  display: grid;
-  gap: var(--space-16);
-}
-
-legend {
-  font-size: var(--text-micro);
-  font-weight: 700;
-  letter-spacing: 0.02em;
-  color: var(--ink-faint);
-  margin-bottom: var(--space-16);
-}
-
-.cards {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(15rem, 100%), 1fr));
-  gap: var(--space-16);
-}
-
-.mode {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  align-items: center;
-  gap: var(--space-4) var(--space-12);
-  margin: 0;
-  padding: var(--space-16);
-  cursor: pointer;
-  border: 1px solid var(--rule);
-  background: var(--ground-raised);
-  transition: border-color var(--dur-fast) var(--ease-out);
-}
-
-.mode:hover {
-  border-color: var(--ink-faint);
-}
-
-.mode.on {
-  border-color: var(--ink);
-}
-
-.mode input {
-  position: absolute;
-  opacity: 0;
-  pointer-events: none;
-}
-
-.mode:has(input:focus-visible) {
-  outline: 2px solid var(--spot-blue);
-  outline-offset: 2px;
-}
-
-.glyph {
-  width: 1.75rem;
-  height: 1.75rem;
-  color: var(--ink-faint);
-  transition: color var(--dur-fast) var(--ease-out);
-}
-
-.mode.on .glyph {
-  color: var(--spot-red);
-}
-
-.glyph .fill {
-  fill: currentColor;
-}
-
-.glyph .stroke {
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 2.5;
-  stroke-linecap: square;
-}
-
-.mode .name {
-  font-family: var(--font-display);
-  font-size: var(--text-heading);
-  font-weight: 500;
-  color: var(--ink);
-}
-
-.mode.on .name {
-  font-weight: 600;
-}
-
-.mode .blurb {
-  grid-column: 2;
-  font-size: var(--text-small);
-  color: var(--ink-soft);
 }
 
 .settings {

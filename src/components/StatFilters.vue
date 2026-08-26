@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
+import ModeCards from '@/components/ModeCards.vue'
 import PoolFilterPopover from '@/components/PoolFilterPopover.vue'
 import SettingChoice from '@/components/SettingChoice.vue'
 import { LADDER_MS, clipLabel } from '@/game/daily'
@@ -7,11 +8,15 @@ import { RATING_LABELS, filterFor, keepFilters, withFilter } from '@/game/filter
 import { HINT_LABELS, HINT_ORDER, isRating } from '@/game/hints'
 import { CLIP_LENGTHS, FLAGS, GUESS_TIMES, MODES, type Choice } from '@/game/rules'
 import type { HintKind, Pool, PoolFilter } from '@/net/protocol'
-import { TIME_WINDOWS, type SettingKey, type StatFilter } from '@/stats/filter'
+import { TIME_WINDOWS, type ModeFilter, type SettingKey, type StatFilter } from '@/stats/filter'
 
 const SEARCH_DELAY = 250
 
 const ANY: Choice<string> = { value: '', label: 'Any' }
+const MODE_CHOICES: (Choice<ModeFilter> & { blurb: string })[] = [
+  { value: 'any', label: 'Any', blurb: 'Every game counts, whichever mode it was played in.' },
+  ...MODES,
+]
 const ON_OFF: Choice<string>[] = [ANY, { value: 'true', label: 'On' }, { value: 'false', label: 'Off' }]
 const WITHINS: Choice<number>[] = [{ value: 0, label: 'Any' }, ...LADDER_MS.map((ms) => ({ value: ms, label: clipLabel(ms) }))]
 
@@ -81,8 +86,16 @@ function toggleKind(kind: HintKind): void {
 </script>
 
 <template>
+  <ModeCards
+    v-if="!daily"
+    class="picker"
+    legend="Mode"
+    :options="MODE_CHOICES"
+    :model-value="filter.mode"
+    @update:model-value="patch({ mode: $event })"
+  />
+
   <div class="filters">
-    <SettingChoice v-if="!daily" label="Mode" :options="MODES" :model-value="filter.mode" @update:model-value="patch({ mode: $event })" />
     <SettingChoice label="When" :options="TIME_WINDOWS" :model-value="filter.time" @update:model-value="patch({ time: $event })" />
 
     <div v-if="member" class="row">
@@ -162,6 +175,10 @@ function toggleKind(kind: HintKind): void {
 </template>
 
 <style scoped>
+.picker {
+  padding-bottom: var(--space-24);
+}
+
 .filters {
   border-top: 1px solid var(--rule);
 }

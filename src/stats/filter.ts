@@ -4,11 +4,12 @@ import { LADDER_MS } from '@/game/daily'
 import type { HintKind, Mode, PoolFilter, Settings, TimeWindow } from '@/net/protocol'
 
 export type SettingKey = Exclude<keyof Settings, 'pools' | 'mode' | 'filters'>
+export type ModeFilter = Mode | 'any'
 export type HintFilter = 'any' | 'none' | HintKind[]
 
 export type StatFilter = {
   time: TimeWindow
-  mode: Mode
+  mode: ModeFilter
   pools: string[]
   filters: Record<string, PoolFilter> | undefined
   hints: HintFilter
@@ -70,6 +71,11 @@ function hintsFrom(raw: string): HintFilter {
   return list(raw) as HintKind[]
 }
 
+function modeFrom(raw: string): ModeFilter {
+  if (raw === 'race') return 'race'
+  return raw === 'any' ? 'any' : 'bolt'
+}
+
 function withinFrom(raw: string): number {
   const ms = Number(raw)
   return WITHINS.has(ms) ? ms : 0
@@ -107,7 +113,7 @@ export function fromQuery(query: LocationQuery): StatFilter {
   }
   return {
     time: WINDOWS.has(time) ? (time as TimeWindow) : 'all',
-    mode: first(query.mode) === 'race' ? 'race' : 'bolt',
+    mode: modeFrom(first(query.mode)),
     pools: list(first(query.pools)),
     filters: filtersFrom(first(query.filters)),
     hints: hintsFrom(first(query.hints)),
@@ -133,7 +139,9 @@ export function toQuery(filter: StatFilter): Record<string, string> {
 }
 
 export function toSearchParams(filter: StatFilter): URLSearchParams {
-  return new URLSearchParams(toQuery(filter))
+  const params = new URLSearchParams(toQuery(filter))
+  if (filter.mode === 'any') params.delete('mode')
+  return params
 }
 
 export function useStatFilter(): { filter: ComputedRef<StatFilter>; update: (next: StatFilter) => void } {
