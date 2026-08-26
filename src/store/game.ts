@@ -57,6 +57,7 @@ export type FeedEntry =
   | { key: number; kind: 'solved'; playerId: string; points: number; elapsedMs: number; place: number }
   | { key: number; kind: 'presence'; playerId: string; arrived: boolean }
   | { key: number; kind: 'skip'; playerId: string }
+  | { key: number; kind: 'hint'; playerId: string; hint: HintKind }
   | { key: number; kind: 'divider'; ordinal: number; outcome: RoundOutcome; track: Reveal }
   | { key: number; kind: 'game'; number: number; over: boolean }
 
@@ -266,6 +267,7 @@ function bind(): void {
   socket.on('hint', (data) => {
     hintsMissing.delete(data.kind)
     hints.set(data.kind, data.kind === 'cover' ? apiUrl(data.value) : data.value)
+    push({ kind: 'hint', playerId: data.requested_by, hint: data.kind })
   })
   socket.on('round_ended', (data) => applyRoundEnd(data.ordinal, data.outcome, data.scores, data.track))
   socket.on('game_ended', (data) => {

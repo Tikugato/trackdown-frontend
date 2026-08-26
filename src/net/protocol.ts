@@ -3,7 +3,7 @@ export type LobbyStatus = 'open' | 'playing' | 'closed'
 export type Verdict = 'hit' | 'near_miss' | 'no_match'
 export type RoundOutcome = 'solved' | 'timeout' | 'skipped' | 'aborted'
 export type RatingKind = 'stars' | 'complexity'
-export type HintKind = 'duration' | 'bpm' | 'ranked_date' | RatingKind | 'mapper' | 'cover'
+export type HintKind = 'duration' | 'bpm' | 'ranked_date' | 'pool' | RatingKind | 'mapper' | 'cover'
 export type LeaveReason = 'left' | 'disconnected'
 export type CloseReason = 'closed' | 'internal error'
 export type PoolKind = 'ranked' | 'curated' | 'user'
@@ -114,6 +114,7 @@ export type Profile = {
   colour?: string
   avatar?: string
   joined_at: string
+  relation?: Relation
   stats: ProfileStats
 }
 

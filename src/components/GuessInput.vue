@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, ref, useId, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, ref, useId, watch } from 'vue'
 import { trackLabel, type Titled } from '@/game/track'
 import { suggestTitles } from '@/net/http'
 
@@ -59,8 +59,9 @@ function close(): void {
 
 function move(step: number): void {
   if (!open.value) return
-  const count = options.value.length
-  cursor.value = (cursor.value + step + count + 1) % (count + 1) - 1
+  const slots = options.value.length + 1
+  cursor.value = ((cursor.value + 1 + step + slots) % slots) - 1
+  void nextTick(() => document.getElementById(activeId.value ?? '')?.scrollIntoView({ block: 'nearest' }))
 }
 
 function submit(): void {

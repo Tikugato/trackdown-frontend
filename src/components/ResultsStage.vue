@@ -46,8 +46,10 @@ const subline = computed(() => {
 })
 
 type Heard = { ordinal: number; track: Reveal; got: boolean }
+type Fastest = { playerId: string; elapsedMs: number; track: Reveal }
 
 const played = computed(() => heardBy(thisGame(feed.value), playerId.value))
+const fastest = computed(() => fastestIn(thisGame(feed.value)))
 
 function heardBy(entries: FeedEntry[], id: string): Heard[] {
   const heard: Heard[] = []
@@ -59,6 +61,22 @@ function heardBy(entries: FeedEntry[], id: string): Heard[] {
     got = false
   }
   return heard
+}
+
+function fastestIn(entries: FeedEntry[]): Fastest | null {
+  let found: Fastest | null = null
+  let beating: Omit<Fastest, 'track'> | null = null
+  for (const entry of entries) {
+    if (entry.kind === 'solved' && beats(entry.elapsedMs, beating ?? found)) beating = entry
+    if (entry.kind !== 'divider') continue
+    if (beating) found = { playerId: beating.playerId, elapsedMs: beating.elapsedMs, track: entry.track }
+    beating = null
+  }
+  return found
+}
+
+function beats(elapsedMs: number, holder: { elapsedMs: number } | null): boolean {
+  return !holder || elapsedMs < holder.elapsedMs
 }
 
 function thisGame(entries: FeedEntry[]): FeedEntry[] {
@@ -129,6 +147,17 @@ function quit(): void {
         </svg>
       </li>
     </ol>
+  </section>
+
+  <section v-if="fastest" class="fastest" :style="{ '--player': inkOf(fastest.playerId) }">
+    <h2>Fastest round</h2>
+    <p>
+      <PlayerLink :id="fastest.playerId" :linkable="profileable(fastest.playerId)" new-tab class="who">
+        {{ nameOf(fastest.playerId) }}
+      </PlayerLink>
+      <span class="time">{{ (fastest.elapsedMs / 1000).toFixed(1) }}s</span>
+      <TrackLink :track="fastest.track" class="title" />
+    </p>
   </section>
 
   <ChatColumn :rows="feedRows" empty="Talk it over while the host decides." class="talk" @say="say" />
@@ -289,6 +318,35 @@ li.top .score {
 
 .verdict.miss {
   color: var(--ink-faint);
+}
+
+.fastest {
+  margin-top: var(--space-32);
+}
+
+.fastest p {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-12);
+  padding-block: var(--space-12);
+  border-bottom: 1px solid var(--rule);
+}
+
+.fastest .who {
+  flex: none;
+}
+
+.time {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--spot-green-text);
+}
+
+.fastest .title {
+  font-family: var(--font-display);
+  font-weight: 500;
+  color: var(--ink-soft);
 }
 
 .talk {

@@ -4,20 +4,13 @@ import { useRouter } from 'vue-router'
 import PersonRow from '@/components/PersonRow.vue'
 import { enterLobby } from '@/game/useLobbyEntry'
 import { searchPlayers } from '@/net/http'
-import type { Person, Relation } from '@/net/protocol'
+import type { Person } from '@/net/protocol'
 import { code } from '@/store/game'
-import { befriend, incoming, invite, loaded, outgoing, refreshFriends, roster, unfriend } from '@/store/friends'
+import { RELATIONS, befriend, incoming, invite, loaded, outgoing, refreshFriends, roster, unfriend } from '@/store/friends'
 import { accountKind } from '@/store/session'
 
 const MIN_SEARCH = 2
 const SEARCH_DELAY_MS = 250
-
-const RELATIONS: Record<Relation, string> = {
-  none: 'Add',
-  friend: 'Friends',
-  incoming: 'Accept',
-  outgoing: 'Requested',
-}
 
 const router = useRouter()
 const isMember = computed(() => accountKind.value === 'discord')
@@ -66,7 +59,7 @@ function describe(reason: unknown): string {
   return reason instanceof Error ? reason.message : 'Something went wrong.'
 }
 
-async function act(step: () => Promise<void>): Promise<void> {
+async function act(step: () => Promise<unknown>): Promise<void> {
   failure.value = ''
   try {
     await step()

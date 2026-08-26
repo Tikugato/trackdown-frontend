@@ -3,8 +3,8 @@ import { computed, ref, watch } from 'vue'
 import PoolFilterPopover from '@/components/PoolFilterPopover.vue'
 import SettingChoice from '@/components/SettingChoice.vue'
 import { LADDER_MS, clipLabel } from '@/game/daily'
-import { filterFor, keepFilters, withFilter } from '@/game/filters'
-import { HINT_LABELS, HINT_ORDER } from '@/game/hints'
+import { RATING_LABELS, filterFor, keepFilters, withFilter } from '@/game/filters'
+import { HINT_LABELS, HINT_ORDER, isRating } from '@/game/hints'
 import { CLIP_LENGTHS, FLAGS, GUESS_TIMES, MODES, type Choice } from '@/game/rules'
 import type { HintKind, Pool, PoolFilter } from '@/net/protocol'
 import { TIME_WINDOWS, type SettingKey, type StatFilter } from '@/stats/filter'
@@ -129,7 +129,7 @@ function toggleKind(kind: HintKind): void {
           :aria-pressed="hasKind(kind)"
           @click="toggleKind(kind)"
         >
-          {{ HINT_LABELS[kind] }}
+          {{ isRating(kind) ? RATING_LABELS[kind] : HINT_LABELS[kind] }}
         </button>
       </div>
     </div>

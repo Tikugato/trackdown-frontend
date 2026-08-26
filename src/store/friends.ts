@@ -1,8 +1,15 @@
 import { computed, reactive, ref } from 'vue'
 import { loadFriends, removeFriend, requestFriend, saveFriendsCanJoin } from '@/net/http'
 import * as socket from '@/net/socket'
-import type { Friend, Person } from '@/net/protocol'
+import type { Friend, Person, Relation } from '@/net/protocol'
 import { accountKind, friendsCanJoin } from './session'
+
+export const RELATIONS: Record<Relation, string> = {
+  none: 'Add friend',
+  friend: 'Friends',
+  incoming: 'Accept',
+  outgoing: 'Requested',
+}
 
 export type Invite = { key: number; playerId: string; name: string; code: string }
 
@@ -49,9 +56,10 @@ export async function refreshFriends(): Promise<void> {
   loaded.value = true
 }
 
-export async function befriend(playerId: string): Promise<void> {
-  await requestFriend(playerId)
+export async function befriend(playerId: string): Promise<Relation> {
+  const relation = await requestFriend(playerId)
   await refreshFriends()
+  return relation
 }
 
 export async function unfriend(playerId: string): Promise<void> {

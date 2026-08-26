@@ -8,7 +8,8 @@ import { trackLabel } from '@/game/track'
 import { avatarUrl, loadPools, loadProfile } from '@/net/http'
 import type { Pool, Profile } from '@/net/protocol'
 import { percent, seconds, toQuery, toSearchParams, useStatFilter } from '@/stats/filter'
-import { playerId } from '@/store/session'
+import { RELATIONS, befriend } from '@/store/friends'
+import { accountKind, playerId } from '@/store/session'
 
 const route = useRoute()
 const { filter, update } = useStatFilter()
@@ -23,6 +24,8 @@ let inFlight: AbortController | null = null
 
 const ink = computed(() => profile.value?.colour || fallbackColour(id.value))
 const mine = computed(() => id.value === playerId.value)
+const member = computed(() => accountKind.value === 'discord')
+const canBefriend = computed(() => profile.value?.relation === 'none' || profile.value?.relation === 'incoming')
 const since = new Intl.DateTimeFormat(undefined, { month: 'long', year: 'numeric' })
 
 const lines = computed(() => {
@@ -55,6 +58,15 @@ onMounted(async () => {
 
 watch([id, filter], () => void fetch(), { immediate: true })
 
+async function addFriend(): Promise<void> {
+  if (!profile.value || !canBefriend.value) return
+  try {
+    profile.value = { ...profile.value, relation: await befriend(id.value) }
+  } catch {
+    return
+  }
+}
+
 async function fetch(): Promise<void> {
   inFlight?.abort()
   const controller = new AbortController()
@@ -79,6 +91,9 @@ async function fetch(): Promise<void> {
       <h1>{{ profile.name }}</h1>
       <p class="since">Playing since {{ since.format(new Date(profile.joined_at)) }}<span v-if="mine"> · this is you</span></p>
     </div>
+    <button v-if="profile.relation && !mine && member" type="button" data-tone="quiet" class="befriend" :disabled="!canBefriend" @click="addFriend">
+      {{ RELATIONS[profile.relation] }}
+    </button>
   </header>
 
   <header v-else-if="loading" class="who" aria-hidden="true">
@@ -140,6 +155,11 @@ h1 {
 .since {
   margin-top: var(--space-4);
   color: var(--ink-soft);
+}
+
+.befriend {
+  margin-left: auto;
+  flex: none;
 }
 
 .empty {

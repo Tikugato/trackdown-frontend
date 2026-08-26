@@ -1,3 +1,4 @@
+import { HINT_LABELS } from '@/game/hints'
 import type { FeedEntry } from '@/store/game'
 import type { Reveal, RoundOutcome } from '@/net/protocol'
 
@@ -6,8 +7,7 @@ type Voice = { playerId: string; who: string; ink: string; linkable: boolean; mi
 export type FeedRow =
   | ({ key: number; kind: 'chat'; text: string } & Voice)
   | ({ key: number; kind: 'solved'; detail: string } & Voice)
-  | { key: number; kind: 'presence'; text: string }
-  | { key: number; kind: 'skip'; text: string }
+  | { key: number; kind: 'note'; text: string }
   | { key: number; kind: 'divider'; text: string; track: Reveal }
   | { key: number; kind: 'game'; text: string }
 
@@ -52,10 +52,13 @@ function toRow(entry: FeedEntry, naming: Naming): FeedRow {
     }
   }
   if (entry.kind === 'presence') {
-    return { key: entry.key, kind: 'presence', text: `${naming.nameOf(entry.playerId)} ${entry.arrived ? 'joined' : 'left'}` }
+    return { key: entry.key, kind: 'note', text: `${naming.nameOf(entry.playerId)} ${entry.arrived ? 'joined' : 'left'}` }
   }
   if (entry.kind === 'skip') {
-    return { key: entry.key, kind: 'skip', text: `${naming.nameOf(entry.playerId)} wants to skip` }
+    return { key: entry.key, kind: 'note', text: `${naming.nameOf(entry.playerId)} wants to skip` }
+  }
+  if (entry.kind === 'hint') {
+    return { key: entry.key, kind: 'note', text: `${naming.nameOf(entry.playerId)} revealed ${HINT_LABELS[entry.hint]}` }
   }
   if (entry.kind === 'game') {
     return { key: entry.key, kind: 'game', text: entry.over ? `Game ${entry.number} over` : `Game ${entry.number}` }

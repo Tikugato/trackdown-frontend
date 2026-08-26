@@ -76,7 +76,7 @@ const revealed = computed(() => {
 })
 const missing = computed(() => {
   const offered = new Set(state.value?.hint_kinds ?? [])
-  return new Set(boardOrder(state.value?.rating ?? 'stars').filter((kind) => !offered.has(kind)))
+  return new Set(boardOrder(state.value?.rating ?? 'stars', false).filter((kind) => !offered.has(kind)))
 })
 const playLabel = computed(() => {
   if (!state.value) return 'Play'
@@ -268,7 +268,7 @@ async function share(): Promise<void> {
       <button v-if="!done" type="button" data-tone="quiet" class="skip" :disabled="busy" @click="skipDaily">Skip</button>
     </div>
 
-    <div class="board">
+    <div class="play">
       <div class="column">
         <ul v-if="state.guesses.length" class="misses">
           <li v-for="(guess, index) in state.guesses" :key="index">
@@ -295,7 +295,7 @@ async function share(): Promise<void> {
       </div>
 
       <aside class="side">
-        <HintBoard :revealed="revealed" :missing="missing" :rating="state.rating ?? 'stars'" :live="!done" @ask="askDailyHint" />
+        <HintBoard :revealed="revealed" :missing="missing" :rating="state.rating ?? 'stars'" :pooled="false" :live="!done" @ask="askDailyHint" />
       </aside>
     </div>
 
@@ -411,7 +411,7 @@ h1 {
   margin-left: auto;
 }
 
-.board {
+.play {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 14rem;
   gap: var(--space-32);
@@ -562,7 +562,7 @@ h1 {
 }
 
 @media (max-width: 52rem) {
-  .board {
+  .play {
     grid-template-columns: 1fr;
     gap: var(--space-24);
   }

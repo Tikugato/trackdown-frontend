@@ -6,6 +6,7 @@ defineProps<{
   revealed: Map<HintKind, string>
   missing: Set<HintKind>
   rating: RatingKind
+  pooled: boolean
   live: boolean
 }>()
 
@@ -16,7 +17,7 @@ const emit = defineEmits<{ ask: [kind: HintKind] }>()
   <section class="hints">
     <h2>Hints</h2>
     <ul class="rows">
-      <li v-for="kind in boardOrder(rating)" :key="kind" :class="{ open: revealed.has(kind) }">
+      <li v-for="kind in boardOrder(rating, pooled)" :key="kind" :class="{ open: revealed.has(kind) }">
         <span class="label">{{ HINT_LABELS[kind] }}</span>
 
         <ul v-if="isRating(kind) && revealed.has(kind)" class="diffs">

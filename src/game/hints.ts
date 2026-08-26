@@ -1,13 +1,14 @@
 import type { HintKind, RatingKind } from '@/net/protocol'
 
-export const HINT_ORDER: HintKind[] = ['duration', 'bpm', 'ranked_date', 'mapper', 'cover', 'stars', 'complexity']
+export const HINT_ORDER: HintKind[] = ['duration', 'bpm', 'ranked_date', 'pool', 'mapper', 'cover', 'stars', 'complexity']
 
 export const HINT_LABELS: Record<HintKind, string> = {
   duration: 'Length',
   bpm: 'BPM',
   ranked_date: 'Ranked',
-  stars: 'Stars',
-  complexity: 'Complexity',
+  pool: 'Pool',
+  stars: 'Rating',
+  complexity: 'Rating',
   mapper: 'Mapper',
   cover: 'Cover',
 }
@@ -16,8 +17,8 @@ export function isRating(kind: HintKind): kind is RatingKind {
   return kind === 'stars' || kind === 'complexity'
 }
 
-export function boardOrder(rating: RatingKind): HintKind[] {
-  return HINT_ORDER.filter((kind) => !isRating(kind) || kind === rating)
+export function boardOrder(rating: RatingKind, pooled: boolean): HintKind[] {
+  return HINT_ORDER.filter((kind) => (isRating(kind) ? kind === rating : kind !== 'pool' || pooled))
 }
 
 const TONES: Record<string, string> = {

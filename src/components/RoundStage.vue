@@ -165,6 +165,7 @@ onBeforeUnmount(stopClip)
           :revealed="hints"
           :missing="hintsMissing"
           :rating="rating"
+          :pooled="settings.pools.length > 1"
           :live="live"
           @ask="askHint"
         />
