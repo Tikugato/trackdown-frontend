@@ -1,11 +1,9 @@
 import { onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import { unlockAudio } from '@/game/clip'
 import { closedReason, code, connect, joinLobby } from '@/store/game'
 import { forgetLobby, lobbyCode, playerName } from '@/store/session'
 
 export async function enterLobby(target: string): Promise<string> {
-  unlockAudio()
   try {
     await connect()
     await joinLobby(target)

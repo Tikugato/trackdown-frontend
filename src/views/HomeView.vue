@@ -3,7 +3,6 @@ import { computed, ref } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 import PersonRow from '@/components/PersonRow.vue'
 import TrackdownMark from '@/components/TrackdownMark.vue'
-import { unlockAudio } from '@/game/clip'
 import { enterLobby } from '@/game/useLobbyEntry'
 import { loaded, online, roster } from '@/store/friends'
 import { accountKind, lobbyCode, playerName } from '@/store/session'
@@ -58,7 +57,6 @@ async function join(target: string): Promise<void> {
 }
 
 function go(where: string): void {
-  unlockAudio()
   void router.push(where)
 }
 </script>

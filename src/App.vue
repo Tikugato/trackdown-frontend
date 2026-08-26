@@ -4,6 +4,7 @@ import { RouterLink, RouterView } from 'vue-router'
 import AccountMenu from '@/components/AccountMenu.vue'
 import InviteNotices from '@/components/InviteNotices.vue'
 import TrackdownMark from '@/components/TrackdownMark.vue'
+import { armUnlock } from '@/game/clip'
 import { loginUrl } from '@/net/http'
 import { connectionStatus, disconnect } from '@/net/socket'
 import { code } from '@/store/game'
@@ -15,6 +16,7 @@ const inLobby = computed(() => code.value !== '')
 const isMember = computed(() => accountKind.value === 'discord')
 
 onMounted(async () => {
+  armUnlock()
   await refreshAccount()
   await refreshFriends()
 })

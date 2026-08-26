@@ -20,6 +20,7 @@ let source: AudioBufferSourceNode | null = null
 let startTimer: ReturnType<typeof setTimeout> | null = null
 let held: AudioBuffer | null = null
 let slowTimer: ReturnType<typeof setTimeout> | null = null
+let armed = false
 
 function readVolume(): number {
   try {
@@ -47,8 +48,27 @@ export function unlockAudio(): void {
   noteBlocked()
 }
 
+export function armUnlock(): void {
+  if (armed) return
+  armed = true
+  window.addEventListener('pointerdown', wake)
+  window.addEventListener('keydown', wake)
+}
+
+function wake(): void {
+  unlockAudio()
+  if (context?.state !== 'running') return
+  window.removeEventListener('pointerdown', wake)
+  window.removeEventListener('keydown', wake)
+}
+
 function noteBlocked(): void {
   soundBlocked.value = context?.state !== 'running'
+}
+
+function markPlaying(): void {
+  noteBlocked()
+  clipState.value = context?.state === 'running' ? 'playing' : 'ready'
 }
 
 function buildGain(target: AudioContext): GainNode {
@@ -69,7 +89,7 @@ export function replayClip(): void {
   })
   source = node
   node.start(context.currentTime)
-  clipState.value = 'playing'
+  markPlaying()
 }
 
 export function stopClip(): void {
@@ -141,12 +161,12 @@ function schedule(buffer: AudioBuffer, playAtMs: number, clipLengthMs: number, j
   if (waitMs >= 0) {
     node.start(context!.currentTime + waitMs / 1000)
     clipState.value = 'ready'
-    startTimer = setTimeout(() => (clipState.value = 'playing'), waitMs)
+    startTimer = setTimeout(markPlaying, waitMs)
     return
   }
   if (!joinedMidRound) {
     node.start(context!.currentTime)
-    clipState.value = 'playing'
+    markPlaying()
     return
   }
   const into = -waitMs / 1000
@@ -155,5 +175,5 @@ function schedule(buffer: AudioBuffer, playAtMs: number, clipLengthMs: number, j
     return
   }
   node.start(context!.currentTime, into)
-  clipState.value = 'playing'
+  markPlaying()
 }
