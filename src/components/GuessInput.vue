@@ -35,7 +35,7 @@ watch(text, (value) => {
 watch(
   () => props.live,
   (on) => {
-    options.value = []
+    close()
     if (on) box.value?.focus()
   },
 )
@@ -50,6 +50,13 @@ async function lookup(query: string): Promise<void> {
   }
 }
 
+function close(): void {
+  inFlight?.abort()
+  if (debounce) clearTimeout(debounce)
+  options.value = []
+  cursor.value = -1
+}
+
 function move(step: number): void {
   if (!open.value) return
   const count = options.value.length
@@ -61,8 +68,7 @@ function submit(): void {
   if (!chosen?.trim() || props.locked) return
   emit('guess', chosen)
   text.value = ''
-  options.value = []
-  cursor.value = -1
+  close()
 }
 
 function pick(option: Titled): void {
@@ -71,10 +77,7 @@ function pick(option: Titled): void {
   submit()
 }
 
-onBeforeUnmount(() => {
-  inFlight?.abort()
-  if (debounce) clearTimeout(debounce)
-})
+onBeforeUnmount(close)
 </script>
 
 <template>
@@ -111,7 +114,7 @@ onBeforeUnmount(() => {
         :placeholder="live ? 'Name it' : 'Say something'"
         @keydown.down.prevent="move(1)"
         @keydown.up.prevent="move(-1)"
-        @keydown.esc="options = []"
+        @keydown.esc="close()"
       />
     </form>
   </div>
