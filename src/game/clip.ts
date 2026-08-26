@@ -6,7 +6,7 @@ export type ClipState = 'idle' | 'fetching' | 'decoding' | 'ready' | 'playing' |
 
 const VOLUME_KEY = 'trackdown.volume'
 const SLOW_AFTER_MS = 1200
-const DEFAULT_VOLUME = 0.8
+const DEFAULT_VOLUME = 0.1
 
 export const clipState = ref<ClipState>('idle')
 export const volume = ref(readVolume())
@@ -24,8 +24,10 @@ let armed = false
 
 function readVolume(): number {
   try {
-    const stored = Number(localStorage.getItem(VOLUME_KEY))
-    return Number.isFinite(stored) && stored >= 0 && stored <= 1 ? stored : DEFAULT_VOLUME
+    const stored = localStorage.getItem(VOLUME_KEY)
+    if (stored === null || stored === '') return DEFAULT_VOLUME
+    const chosen = Number(stored)
+    return Number.isFinite(chosen) && chosen >= 0 && chosen <= 1 ? chosen : DEFAULT_VOLUME
   } catch {
     return DEFAULT_VOLUME
   }

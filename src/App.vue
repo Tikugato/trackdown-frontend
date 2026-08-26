@@ -55,11 +55,16 @@ async function leave(): Promise<void> {
     <InviteNotices :invites="invites" @dismiss="dismissInvite" />
     <RouterView />
   </main>
+
+  <footer class="foot">
+    <p>Trackdown does not own the audio it plays and is not responsible for where it comes from.</p>
+  </footer>
 </template>
 
 <style scoped>
 .bar {
   display: flex;
+  width: 100%;
   align-items: center;
   justify-content: space-between;
   gap: var(--space-24);
@@ -101,14 +106,27 @@ async function leave(): Promise<void> {
 }
 
 main {
+  flex: 1;
+  width: 100%;
   max-width: var(--column);
   margin: 0 auto;
   padding: var(--space-32) var(--space-24) var(--space-64);
 }
 
+.foot {
+  width: 100%;
+  max-width: var(--column);
+  margin: 0 auto;
+  padding: var(--space-16) var(--space-24);
+  border-top: 1px solid var(--rule);
+  font-size: var(--text-micro);
+  color: var(--ink-faint);
+}
+
 @media (max-width: 40rem) {
   .bar,
-  main {
+  main,
+  .foot {
     padding-inline: var(--space-16);
   }
 }

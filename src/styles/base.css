@@ -24,6 +24,12 @@ body {
   text-rendering: optimizeLegibility;
 }
 
+#app {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
 h1,
 h2 {
   font-family: var(--font-display);
