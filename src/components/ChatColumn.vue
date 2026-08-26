@@ -11,7 +11,7 @@ const emit = defineEmits<{ say: [text: string] }>()
   <section class="chat">
     <h2>Chat</h2>
     <GuessFeed :rows="rows" :empty="empty" class="feed" />
-    <GuessInput :locked="false" :live="false" :suggest="false" @guess="emit('say', $event)" />
+    <GuessInput :locked="false" :live="false" @guess="emit('say', $event)" />
   </section>
 </template>
 

@@ -133,6 +133,8 @@ export type Settings = {
   filters?: Record<string, PoolFilter> | undefined
 }
 
+export type SuggestScope = Pick<Settings, 'pools' | 'filters'>
+
 export type Player = {
   player_id: string
   name?: string

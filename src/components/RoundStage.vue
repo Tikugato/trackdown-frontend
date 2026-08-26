@@ -156,7 +156,7 @@ onBeforeUnmount(stopClip)
           <span class="mark" aria-hidden="true"></span>
           So close. Not the right track.
         </p>
-        <GuessInput :locked="guessLocked" :live="live" :suggest="settings.allow_suggestions" @guess="say" />
+        <GuessInput :locked="guessLocked" :live="live" :suggest="settings.allow_suggestions ? settings : undefined" @guess="say" />
       </div>
 
       <aside class="side">

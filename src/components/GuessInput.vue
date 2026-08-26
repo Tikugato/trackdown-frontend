@@ -2,8 +2,9 @@
 import { computed, nextTick, onBeforeUnmount, ref, useId, watch } from 'vue'
 import { trackLabel, type Titled } from '@/game/track'
 import { suggestTitles } from '@/net/http'
+import type { SuggestScope } from '@/net/protocol'
 
-const props = defineProps<{ locked: boolean; live: boolean; suggest: boolean }>()
+const props = defineProps<{ locked: boolean; live: boolean; suggest?: SuggestScope | undefined }>()
 const emit = defineEmits<{ guess: [text: string] }>()
 
 const MIN_QUERY = 3
@@ -18,7 +19,7 @@ const listId = useId()
 let debounce: ReturnType<typeof setTimeout> | null = null
 let inFlight: AbortController | null = null
 
-const suggesting = computed(() => props.suggest && props.live)
+const suggesting = computed(() => props.live && props.suggest !== undefined)
 const open = computed(() => suggesting.value && options.value.length > 0)
 const activeId = computed(() => (cursor.value >= 0 ? `${listId}-${cursor.value}` : undefined))
 
@@ -41,10 +42,11 @@ watch(
 )
 
 async function lookup(query: string): Promise<void> {
+  if (!props.suggest) return
   inFlight?.abort()
   inFlight = new AbortController()
   try {
-    options.value = await suggestTitles(query, inFlight.signal)
+    options.value = await suggestTitles(query, props.suggest, inFlight.signal)
   } catch {
     return
   }

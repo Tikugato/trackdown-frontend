@@ -11,6 +11,7 @@ import type {
   PoolFilter,
   Profile,
   Relation,
+  SuggestScope,
 } from './protocol'
 
 export const apiOrigin = (import.meta.env.VITE_API_ORIGIN ?? '').replace(/\/+$/, '')
@@ -54,8 +55,10 @@ export async function countSongs(
   return (await response.json()) as Record<string, number>
 }
 
-export async function suggestTitles(query: string, signal: AbortSignal): Promise<Titled[]> {
-  const response = await fetch(`${apiOrigin}/autocomplete?q=${encodeURIComponent(query)}`, { signal })
+export async function suggestTitles(query: string, scope: SuggestScope, signal: AbortSignal): Promise<Titled[]> {
+  const params = new URLSearchParams({ q: query, pools: scope.pools.join(',') })
+  if (scope.filters) params.set('filters', JSON.stringify(scope.filters))
+  const response = await fetch(`${apiOrigin}/autocomplete?${params}`, { signal })
   if (!response.ok) return []
   return (await response.json()) as Titled[]
 }

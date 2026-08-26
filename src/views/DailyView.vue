@@ -282,7 +282,7 @@ async function share(): Promise<void> {
           So close. Not the right track.
         </p>
 
-        <GuessInput v-if="!done" :locked="busy" live suggest @guess="guessDaily" />
+        <GuessInput v-if="!done" :locked="busy" live :suggest="{ pools: [poolId] }" @guess="guessDaily" />
 
         <section v-else class="result">
           <p class="label">Your result</p>
