@@ -4,6 +4,7 @@ import { RouterLink, useRoute } from 'vue-router'
 import PlayerMark from '@/components/PlayerMark.vue'
 import StatFilters from '@/components/StatFilters.vue'
 import { fallbackColour } from '@/game/palette'
+import { trackLabel } from '@/game/track'
 import { avatarUrl, loadPools, loadProfile } from '@/net/http'
 import type { Pool, Profile } from '@/net/protocol'
 import { percent, seconds, toQuery, toSearchParams, useStatFilter } from '@/stats/filter'
@@ -106,7 +107,7 @@ async function fetch(): Promise<void> {
         <dt>Fastest</dt>
         <dd>
           {{ seconds(profile.stats.fastest.solved_ms) }} on
-          <RouterLink :to="{ path: '/leaderboard', query: fastestQuery }">{{ profile.stats.fastest.title }}</RouterLink>
+          <RouterLink :to="{ path: '/leaderboard', query: fastestQuery }">{{ trackLabel(profile.stats.fastest) }}</RouterLink>
         </dd>
       </div>
       <div v-else-if="profile && !profile.stats.rounds">
@@ -194,6 +195,7 @@ dd.quiet {
 .face.ghost {
   width: var(--mark);
   height: var(--mark);
+  border-radius: 50%;
 }
 
 .ghost.name {

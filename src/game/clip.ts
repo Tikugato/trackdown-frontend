@@ -84,18 +84,25 @@ export function stopClip(): void {
   clipState.value = 'idle'
 }
 
+export async function loadClip(path: string): Promise<boolean> {
+  stopClip()
+  unlockAudio()
+  if (!context || !gain) return false
+  const buffer = await decode(path)
+  if (!buffer) return false
+  held = buffer
+  clipReady.value = true
+  clipState.value = 'ready'
+  return true
+}
+
 export async function playClip(
   path: string,
   playAtMs: number,
   clipLengthMs: number,
   joinedMidRound: boolean,
 ): Promise<void> {
-  stopClip()
-  unlockAudio()
-  if (!context || !gain) return
-  const buffer = await decode(path)
-  if (!buffer) return
-  schedule(buffer, playAtMs, clipLengthMs, joinedMidRound)
+  if (await loadClip(path)) schedule(held!, playAtMs, clipLengthMs, joinedMidRound)
 }
 
 async function decode(path: string): Promise<AudioBuffer | null> {
@@ -122,8 +129,6 @@ function clearSlowTimer(): void {
 }
 
 function schedule(buffer: AudioBuffer, playAtMs: number, clipLengthMs: number, joinedMidRound: boolean): void {
-  held = buffer
-  clipReady.value = true
   const node = context!.createBufferSource()
   node.buffer = buffer
   node.connect(gain!)

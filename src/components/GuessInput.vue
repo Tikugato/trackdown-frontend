@@ -2,7 +2,7 @@
 import { computed, onBeforeUnmount, ref, useId, watch } from 'vue'
 import { suggestTitles } from '@/net/http'
 
-const props = defineProps<{ locked: boolean; disabled: boolean; suggest: boolean }>()
+const props = defineProps<{ locked: boolean; live: boolean; suggest: boolean }>()
 const emit = defineEmits<{ guess: [text: string] }>()
 
 const MIN_QUERY = 3
@@ -17,13 +17,14 @@ const listId = useId()
 let debounce: ReturnType<typeof setTimeout> | null = null
 let inFlight: AbortController | null = null
 
-const open = computed(() => props.suggest && options.value.length > 0 && !props.disabled)
+const suggesting = computed(() => props.suggest && props.live)
+const open = computed(() => suggesting.value && options.value.length > 0)
 const activeId = computed(() => (cursor.value >= 0 ? `${listId}-${cursor.value}` : undefined))
 
 watch(text, (value) => {
   cursor.value = -1
   if (debounce) clearTimeout(debounce)
-  if (!props.suggest || value.trim().length < MIN_QUERY) {
+  if (!suggesting.value || value.trim().length < MIN_QUERY) {
     options.value = []
     return
   }
@@ -31,10 +32,10 @@ watch(text, (value) => {
 })
 
 watch(
-  () => props.disabled,
-  (off) => {
-    if (off) options.value = []
-    else box.value?.focus()
+  () => props.live,
+  (on) => {
+    options.value = []
+    if (on) box.value?.focus()
   },
 )
 
@@ -92,7 +93,7 @@ onBeforeUnmount(() => {
     </ul>
 
     <form @submit.prevent="submit">
-      <label class="visually-hidden" for="guess">Your guess</label>
+      <label class="visually-hidden" for="guess">{{ live ? 'Your guess' : 'Your message' }}</label>
       <input
         id="guess"
         ref="box"
@@ -100,12 +101,12 @@ onBeforeUnmount(() => {
         role="combobox"
         autocomplete="off"
         spellcheck="false"
+        maxlength="280"
         :aria-expanded="open"
         :aria-controls="listId"
         :aria-activedescendant="activeId"
         :class="{ locked }"
-        :disabled="disabled"
-        :placeholder="disabled ? 'Wait for the next clip' : 'Name it'"
+        :placeholder="live ? 'Name it' : 'Say something'"
         @keydown.down.prevent="move(1)"
         @keydown.up.prevent="move(-1)"
         @keydown.esc="options = []"
@@ -147,9 +148,5 @@ input {
 
 input.locked {
   border-color: var(--ink-faint);
-}
-
-input:disabled {
-  color: var(--ink-faint);
 }
 </style>

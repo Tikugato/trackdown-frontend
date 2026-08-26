@@ -1,22 +1,28 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
+import ChatColumn from '@/components/ChatColumn.vue'
 import PlayerLink from '@/components/PlayerLink.vue'
 import PlayerMark from '@/components/PlayerMark.vue'
+import TrackLink from '@/components/TrackLink.vue'
 import {
+  type FeedEntry,
   avatarOf,
   dismissResults,
   feed,
+  feedRows,
   inkOf,
   isHost,
   leaveLobby,
   nameOf,
   profileable,
   roundsPlayed,
+  say,
   solveCounts,
   standings,
   startGame,
 } from '@/store/game'
+import type { Reveal } from '@/net/protocol'
 import { playerId } from '@/store/session'
 
 const router = useRouter()
@@ -39,9 +45,29 @@ const subline = computed(() => {
   return `You got ${got} of ${roundsPlayed.value}`
 })
 
-const played = computed(() =>
-  feed.value.flatMap((entry) => (entry.kind === 'divider' ? [{ ordinal: entry.ordinal, title: entry.title }] : [])),
-)
+type Heard = { ordinal: number; track: Reveal; got: boolean }
+
+const played = computed(() => heardBy(thisGame(feed.value), playerId.value))
+
+function heardBy(entries: FeedEntry[], id: string): Heard[] {
+  const heard: Heard[] = []
+  let got = false
+  for (const entry of entries) {
+    if (entry.kind === 'solved' && entry.playerId === id) got = true
+    if (entry.kind !== 'divider') continue
+    heard.push({ ordinal: entry.ordinal, track: entry.track, got })
+    got = false
+  }
+  return heard
+}
+
+function thisGame(entries: FeedEntry[]): FeedEntry[] {
+  let start = 0
+  entries.forEach((entry, index) => {
+    if (entry.kind === 'game' && !entry.over) start = index
+  })
+  return entries.slice(start)
+}
 
 function solvesFor(id: string): number {
   return solveCounts.get(id) ?? 0
@@ -92,14 +118,20 @@ function quit(): void {
   </section>
 
   <section v-if="played.length" class="played">
-    <h2>What you sat through</h2>
+    <h2>What you heard</h2>
     <ol>
       <li v-for="track in played" :key="track.ordinal">
         <span class="ordinal">{{ track.ordinal }}</span>
-        <span class="title">{{ track.title }}</span>
+        <TrackLink :track="track.track" class="title" />
+        <svg class="verdict" :class="track.got ? 'hit' : 'miss'" viewBox="0 0 16 16" role="img" :aria-label="track.got ? 'You got it' : 'You missed it'">
+          <path v-if="track.got" d="M2.5 8.5 L6.5 12.5 L13.5 4.5" />
+          <path v-else d="M3.5 3.5 L12.5 12.5 M12.5 3.5 L3.5 12.5" />
+        </svg>
       </li>
     </ol>
   </section>
+
+  <ChatColumn :rows="feedRows" empty="Talk it over while the host decides." class="talk" @say="say" />
 
   <div class="actions">
     <button v-if="isHost" type="button" data-tone="loud" @click="again">Run it back</button>
@@ -233,9 +265,42 @@ li.top .score {
 }
 
 .played .title {
+  flex: 1;
+  min-width: 0;
   font-family: var(--font-display);
   font-weight: 500;
   color: var(--ink-soft);
+}
+
+.verdict {
+  width: 1rem;
+  height: 1rem;
+  flex: none;
+  align-self: center;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.25;
+  stroke-linecap: square;
+}
+
+.verdict.hit {
+  color: var(--spot-green);
+}
+
+.verdict.miss {
+  color: var(--ink-faint);
+}
+
+.talk {
+  margin-top: var(--space-32);
+}
+
+.talk :deep(h2) {
+  font-family: var(--font-body);
+  font-size: var(--text-micro);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--ink-faint);
 }
 
 .actions {

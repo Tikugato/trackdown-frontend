@@ -10,12 +10,14 @@ import type {
   LobbyStatus,
   Mode,
   Player,
+  RatingKind,
   Reveal,
   Round,
   RoundOutcome,
   Settings,
   Verdict,
 } from '@/net/protocol'
+import { toRows } from '@/game/feed'
 import { fallbackColour } from '@/game/palette'
 import { accountKind, forgetLobby, playerId, playerName, rememberLobby } from './session'
 
@@ -54,11 +56,12 @@ export type FeedEntry =
   | { key: number; kind: 'chat'; playerId: string; text: string }
   | { key: number; kind: 'solved'; playerId: string; points: number; elapsedMs: number; place: number }
   | { key: number; kind: 'presence'; playerId: string; arrived: boolean }
-  | { key: number; kind: 'divider'; ordinal: number; outcome: RoundOutcome; title: string }
+  | { key: number; kind: 'divider'; ordinal: number; outcome: RoundOutcome; track: Reveal }
+  | { key: number; kind: 'game'; number: number; over: boolean }
 
 export type BreatherTone = 'won' | 'lost' | 'cold'
 
-export type Breather = { tone: BreatherTone; headline: string; until: number; track: Reveal }
+export type Breather = { tone: BreatherTone; headline: string; until: number; track: Reveal; final: boolean }
 
 export type PrivateVerdict = { verdict: Verdict; points: number; elapsedMs: number; at: number }
 
@@ -68,8 +71,10 @@ export const hostId = ref('')
 export const settings = shallowRef<Settings>(DEFAULT_SETTINGS)
 export const seats = reactive(new Map<string, Seat>())
 export const round = shallowRef<Round | null>(null)
+export const rating = ref<RatingKind>('stars')
 export const totalRounds = ref(0)
 export const feed = ref<FeedEntry[]>([])
+export const gameNumber = ref(0)
 export const standings = ref<Player[]>([])
 export const closedReason = ref('')
 export const lastError = ref('')
@@ -118,6 +123,10 @@ function push(entry: Keyless<FeedEntry>): void {
   feed.value = [...feed.value, { ...entry, key: keyCounter } as FeedEntry].slice(-FEED_LIMIT)
 }
 
+export const feedRows = computed(() =>
+  toRows(feed.value, { nameOf, inkOf, linkable: profileable, me: playerId.value }),
+)
+
 function seatFor(id: string): Seat {
   const existing = seats.get(id)
   if (existing) return existing
@@ -148,6 +157,7 @@ function resetRound(): void {
 function resetLobby(): void {
   seats.clear()
   feed.value = []
+  gameNumber.value = 0
   standings.value = []
   round.value = null
   totalRounds.value = 0
@@ -172,6 +182,7 @@ function applyLobby(data: Lobby): void {
   }
   joinedMidRound.value = data.round != null
   round.value = data.round ?? null
+  if (data.round) rating.value = data.round.rating
   settleEntry(null)
 }
 
@@ -180,14 +191,18 @@ function applyRoundEnd(ordinal: number, outcome: RoundOutcome, scores: Record<st
     seatFor(id).score = score
   }
   roundsPlayed.value = ordinal
-  push({ kind: 'divider', ordinal, outcome, title: track.title })
-  breather.value = describeBreather(outcome, track)
+  push({ kind: 'divider', ordinal, outcome, track })
+  breather.value = { ...describeBreather(outcome, track), final: gameDecided(ordinal, scores) }
   holdBreather(Date.now() + settings.value.intermission_ms)
   round.value = null
   skipVoted.value = false
 }
 
-function describeBreather(outcome: RoundOutcome, track: Reveal): Breather {
+function gameDecided(ordinal: number, scores: Record<string, number>): boolean {
+  return ordinal >= totalRounds.value || Object.values(scores).some((score) => score >= settings.value.points_to_win)
+}
+
+function describeBreather(outcome: RoundOutcome, track: Reveal): Omit<Breather, 'final'> {
   const until = Date.now()
   if (outcome === 'skipped') return { tone: 'cold', headline: 'Skipped', until, track }
   if (outcome !== 'solved') return { tone: 'cold', headline: 'Nobody got it', until, track }
@@ -220,10 +235,13 @@ function bind(): void {
     standings.value = []
     solveCounts.clear()
     roundsPlayed.value = 0
+    gameNumber.value += 1
+    push({ kind: 'game', number: gameNumber.value, over: false })
   })
   socket.on('round_started', (data) => {
     joinedMidRound.value = false
     round.value = data
+    rating.value = data.rating
     breather.value = null
     resetRound()
   })
@@ -253,6 +271,7 @@ function bind(): void {
     standings.value = data.standings
     data.standings.forEach(absorb)
     round.value = null
+    push({ kind: 'game', number: gameNumber.value, over: true })
   })
   socket.on('lobby_closed', (data) => {
     closedReason.value = data.reason
@@ -336,11 +355,17 @@ export function startGame(): void {
   socket.send({ type: 'start', data: {} }, nextCommandId())
 }
 
-export function submitGuess(text: string): boolean {
-  if (guessLocked.value || !text.trim()) return false
+export function say(text: string): boolean {
+  const clean = text.trim()
+  if (!clean) return false
+  if (!round.value) {
+    socket.send({ type: 'chat', data: { text: clean } })
+    return true
+  }
+  if (guessLocked.value) return false
   guessLocked.value = true
   setTimeout(() => (guessLocked.value = false), GUESS_LOCKOUT_MS)
-  socket.send({ type: 'guess', data: { text: text.trim() } })
+  socket.send({ type: 'guess', data: { text: clean } })
   return true
 }
 

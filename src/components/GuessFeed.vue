@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { nextTick, ref, watch } from 'vue'
 import PlayerLink from '@/components/PlayerLink.vue'
+import TrackLink from '@/components/TrackLink.vue'
 import type { FeedRow } from '@/game/feed'
 
-const props = defineProps<{ rows: FeedRow[] }>()
+const props = defineProps<{ rows: FeedRow[]; empty: string }>()
 
 const shell = ref<HTMLElement | null>(null)
 const pinned = ref(true)
@@ -28,12 +29,14 @@ function onScroll(): void {
   <div ref="shell" class="feed" role="log" @scroll="onScroll">
     <div class="spacer"></div>
 
-    <p v-if="!rows.length" class="empty">Type what you think it is. Everyone sees your wrong answers.</p>
+    <p v-if="!rows.length" class="empty">{{ empty }}</p>
 
     <template v-for="row in rows" :key="row.key">
-      <p v-if="row.kind === 'divider'" class="divider">
+      <p v-if="row.kind === 'game'" class="game">{{ row.text }}</p>
+
+      <p v-else-if="row.kind === 'divider'" class="divider">
         <span>{{ row.text }}</span>
-        <span class="answer">{{ row.title }}</span>
+        <TrackLink :track="row.track" class="answer" />
       </p>
 
       <p v-else-if="row.kind === 'presence'" class="presence">{{ row.text }}</p>
@@ -119,7 +122,7 @@ function onScroll(): void {
 
 .solved .detail {
   font-size: var(--text-small);
-  color: var(--spot-red-text);
+  color: var(--spot-green-text);
   font-weight: 700;
   font-variant-numeric: tabular-nums;
 }
@@ -127,7 +130,7 @@ function onScroll(): void {
 .mark {
   width: var(--mark);
   height: var(--mark);
-  background: var(--spot-red);
+  background: var(--spot-green);
   flex: none;
   align-self: center;
   transform: rotate(45deg);
@@ -159,6 +162,16 @@ function onScroll(): void {
   font-size: var(--text-micro);
   color: var(--ink-faint);
   padding-block: var(--space-4);
+}
+
+.game {
+  margin-top: var(--space-24);
+  padding-top: var(--space-8);
+  border-top: 2px solid var(--ink);
+  font-family: var(--font-display);
+  font-size: var(--text-heading);
+  font-weight: 500;
+  color: var(--ink);
 }
 
 @keyframes land {

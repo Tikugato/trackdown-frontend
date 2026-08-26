@@ -9,11 +9,7 @@ import { connectionStatus, disconnect } from '@/net/socket'
 import { code } from '@/store/game'
 import { dismissInvite, invites, refreshFriends } from '@/store/friends'
 import { accountKind, playerAvatar, playerColour, playerId, playerName, refreshAccount, signIn, signOut } from '@/store/session'
-import { setTheme, theme, type ThemeChoice } from '@/store/theme'
 
-const NEXT_THEME: Record<ThemeChoice, ThemeChoice> = { system: 'light', light: 'dark', dark: 'system' }
-
-const themeLabel = computed(() => ({ system: 'System', light: 'Paper', dark: 'Ink' })[theme.value])
 const dropped = computed(() => connectionStatus.value === 'reconnecting')
 const inLobby = computed(() => code.value !== '')
 const isMember = computed(() => accountKind.value === 'discord')
@@ -39,8 +35,8 @@ async function leave(): Promise<void> {
     <div class="tools">
       <p v-if="dropped" class="dropped" role="status">Reconnecting</p>
       <RouterLink v-if="isMember" to="/friends" class="friends">Friends</RouterLink>
-      <button type="button" class="theme" @click="setTheme(NEXT_THEME[theme])">{{ themeLabel }}</button>
       <AccountMenu
+        :id="playerId"
         :name="playerName"
         :kind="accountKind"
         :colour="playerColour"
@@ -99,18 +95,6 @@ async function leave(): Promise<void> {
 
 .friends:hover,
 .friends.router-link-active {
-  color: var(--ink);
-}
-
-.theme {
-  font-size: var(--text-micro);
-  font-weight: 700;
-  letter-spacing: 0.02em;
-  color: var(--ink-faint);
-  padding: var(--space-4);
-}
-
-.theme:hover {
   color: var(--ink);
 }
 

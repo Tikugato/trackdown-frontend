@@ -1,32 +1,38 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
+import PoolFilterPopover from '@/components/PoolFilterPopover.vue'
 import SettingChoice from '@/components/SettingChoice.vue'
+import { LADDER_MS, clipLabel } from '@/game/daily'
+import { filterFor, keepFilters, withFilter } from '@/game/filters'
 import { HINT_LABELS, HINT_ORDER } from '@/game/hints'
-import { CLIP_LENGTHS, FLAGS, GUESS_TIMES, MODES, type Choice, type RuleKey } from '@/game/rules'
-import type { HintKind, Pool } from '@/net/protocol'
-import { TIME_WINDOWS, type StatFilter } from '@/stats/filter'
+import { CLIP_LENGTHS, FLAGS, GUESS_TIMES, MODES, type Choice } from '@/game/rules'
+import type { HintKind, Pool, PoolFilter } from '@/net/protocol'
+import { TIME_WINDOWS, type SettingKey, type StatFilter } from '@/stats/filter'
 
 const SEARCH_DELAY = 250
 
 const ANY: Choice<string> = { value: '', label: 'Any' }
 const ON_OFF: Choice<string>[] = [ANY, { value: 'true', label: 'On' }, { value: 'false', label: 'Off' }]
+const WITHINS: Choice<number>[] = [{ value: 0, label: 'Any' }, ...LADDER_MS.map((ms) => ({ value: ms, label: clipLabel(ms) }))]
 
 function stringly<T extends string | number>(choices: Choice<T>[]): Choice<string>[] {
   return [ANY, ...choices.map((choice) => ({ value: String(choice.value), label: choice.label }))]
 }
 
-const RULE_ROWS: { key: RuleKey; label: string; options: Choice<string>[] }[] = [
-  { key: 'mode', label: 'Mode', options: stringly(MODES) },
+const RULE_ROWS: { key: SettingKey; label: string; options: Choice<string>[] }[] = [
   { key: 'clip_length_ms', label: 'Clip length', options: stringly(CLIP_LENGTHS) },
   { key: 'guess_time_ms', label: 'Time to guess', options: stringly(GUESS_TIMES) },
   ...FLAGS.map((flag) => ({ key: flag.key, label: flag.label, options: ON_OFF })),
 ]
 
-const props = defineProps<{ filter: StatFilter; pools: Pool[]; searchable: boolean }>()
+const props = defineProps<{ filter: StatFilter; pools: Pool[]; searchable: boolean; daily?: boolean; member?: boolean }>()
 const emit = defineEmits<{ 'update:filter': [filter: StatFilter] }>()
 
 const typed = ref(props.filter.search)
 const rulesTouched = computed(() => Object.keys(props.filter.settings).length > 0)
+const filterable = computed(() =>
+  props.pools.length === 1 ? props.pools : props.pools.filter((pool) => props.filter.pools.includes(pool.id)),
+)
 
 let pending: ReturnType<typeof setTimeout> | undefined
 
@@ -46,7 +52,7 @@ function patch(change: Partial<StatFilter>): void {
   emit('update:filter', { ...props.filter, ...change })
 }
 
-function setRule(key: RuleKey, value: string): void {
+function setRule(key: SettingKey, value: string): void {
   const settings = { ...props.filter.settings }
   if (value) settings[key] = value
   else delete settings[key]
@@ -55,7 +61,12 @@ function setRule(key: RuleKey, value: string): void {
 
 function togglePool(id: string): void {
   const chosen = props.filter.pools
-  patch({ pools: chosen.includes(id) ? chosen.filter((held) => held !== id) : [...chosen, id] })
+  const pools = chosen.includes(id) ? chosen.filter((held) => held !== id) : [...chosen, id]
+  patch({ pools, filters: keepFilters(props.filter.filters, pools) })
+}
+
+function setPoolFilter(id: string, chosen: PoolFilter): void {
+  patch({ filters: withFilter(props.filter.filters, id, chosen) })
 }
 
 function hasKind(kind: HintKind): boolean {
@@ -71,7 +82,16 @@ function toggleKind(kind: HintKind): void {
 
 <template>
   <div class="filters">
+    <SettingChoice v-if="!daily" label="Mode" :options="MODES" :model-value="filter.mode" @update:model-value="patch({ mode: $event })" />
     <SettingChoice label="When" :options="TIME_WINDOWS" :model-value="filter.time" @update:model-value="patch({ time: $event })" />
+
+    <div v-if="member" class="row">
+      <span class="label">Who</span>
+      <div class="chips">
+        <button type="button" data-tone="chip" :aria-pressed="!filter.friends" @click="patch({ friends: false })">Everyone</button>
+        <button type="button" data-tone="chip" :aria-pressed="filter.friends" @click="patch({ friends: true })">Friends</button>
+      </div>
+    </div>
 
     <div v-if="pools.length > 1" class="row">
       <span class="label">Pools</span>
@@ -88,6 +108,13 @@ function toggleKind(kind: HintKind): void {
         </button>
       </div>
     </div>
+
+    <template v-if="!daily">
+      <div v-for="pool in filterable" :key="pool.id" class="row">
+        <span class="label">{{ pool.name }}</span>
+        <PoolFilterPopover :pool="pool" :filter="filterFor(filter.filters, pool.id)" @update:filter="setPoolFilter(pool.id, $event)" />
+      </div>
+    </template>
 
     <div class="row">
       <span class="label">Hints used</span>
@@ -107,7 +134,15 @@ function toggleKind(kind: HintKind): void {
       </div>
     </div>
 
-    <details class="rules" :open="rulesTouched">
+    <SettingChoice
+      v-if="daily"
+      label="Got it within"
+      :options="WITHINS"
+      :model-value="filter.within"
+      @update:model-value="patch({ within: $event })"
+    />
+
+    <details v-else class="rules" :open="rulesTouched">
       <summary>Rules the game was played with</summary>
       <SettingChoice
         v-for="row in RULE_ROWS"

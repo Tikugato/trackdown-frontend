@@ -1,14 +1,12 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import PlayerLink from '@/components/PlayerLink.vue'
-import PlayerMark from '@/components/PlayerMark.vue'
-import { fallbackColour } from '@/game/palette'
+import PersonRow from '@/components/PersonRow.vue'
 import { enterLobby } from '@/game/useLobbyEntry'
-import { avatarUrl, searchPlayers } from '@/net/http'
+import { searchPlayers } from '@/net/http'
 import type { Person, Relation } from '@/net/protocol'
 import { code } from '@/store/game'
-import { befriend, friends, incoming, invite, loaded, outgoing, refreshFriends, unfriend } from '@/store/friends'
+import { befriend, incoming, invite, loaded, outgoing, refreshFriends, roster, unfriend } from '@/store/friends'
 import { accountKind } from '@/store/session'
 
 const MIN_SEARCH = 2
@@ -23,7 +21,6 @@ const RELATIONS: Record<Relation, string> = {
 
 const router = useRouter()
 const isMember = computed(() => accountKind.value === 'discord')
-const list = computed(() => [...friends.values()].sort((a, b) => Number(b.online) - Number(a.online) || a.name.localeCompare(b.name)))
 const inLobby = computed(() => code.value !== '')
 
 const query = ref('')
@@ -87,10 +84,6 @@ async function joinFriend(target: string): Promise<void> {
   failure.value = await enterLobby(target)
   if (!failure.value) await router.push(`/${target}`)
 }
-
-function inkOf(person: Person): string {
-  return person.colour || fallbackColour(person.player_id)
-}
 </script>
 
 <template>
@@ -107,9 +100,7 @@ function inkOf(person: Person): string {
       <label for="friend-search">Find someone</label>
       <input id="friend-search" v-model="query" type="search" spellcheck="false" autocomplete="off" placeholder="Their Discord name" />
       <ul v-if="found.length" class="people">
-        <li v-for="person in found" :key="person.player_id" :style="{ '--player': inkOf(person) }">
-          <PlayerMark :colour="inkOf(person)" :avatar="avatarUrl(person.avatar)" :name="person.name" class="chip" />
-          <PlayerLink :id="person.player_id" linkable class="who">{{ person.name }}</PlayerLink>
+        <PersonRow v-for="person in found" :key="person.player_id" :person="person">
           <button
             type="button"
             data-tone="plain"
@@ -118,7 +109,7 @@ function inkOf(person: Person): string {
           >
             {{ RELATIONS[person.relation ?? 'none'] }}
           </button>
-        </li>
+        </PersonRow>
       </ul>
       <p v-else-if="query.trim().length >= MIN_SEARCH && !searching" class="quiet">Nobody by that name has logged in yet.</p>
     </section>
@@ -126,41 +117,34 @@ function inkOf(person: Person): string {
     <section v-if="incoming.length" class="block">
       <h2>Requests for you</h2>
       <ul class="people">
-        <li v-for="person in incoming" :key="person.player_id" :style="{ '--player': inkOf(person) }">
-          <PlayerMark :colour="inkOf(person)" :avatar="avatarUrl(person.avatar)" :name="person.name" class="chip" />
-          <PlayerLink :id="person.player_id" linkable class="who">{{ person.name }}</PlayerLink>
+        <PersonRow v-for="person in incoming" :key="person.player_id" :person="person">
           <button type="button" data-tone="loud" @click="act(() => befriend(person.player_id))">Accept</button>
           <button type="button" data-tone="plain" @click="act(() => unfriend(person.player_id))">Decline</button>
-        </li>
+        </PersonRow>
       </ul>
     </section>
 
     <section v-if="outgoing.length" class="block">
       <h2>Waiting on them</h2>
       <ul class="people">
-        <li v-for="person in outgoing" :key="person.player_id" :style="{ '--player': inkOf(person) }">
-          <PlayerMark :colour="inkOf(person)" :avatar="avatarUrl(person.avatar)" :name="person.name" class="chip" />
-          <PlayerLink :id="person.player_id" linkable class="who">{{ person.name }}</PlayerLink>
+        <PersonRow v-for="person in outgoing" :key="person.player_id" :person="person">
           <button type="button" data-tone="plain" @click="act(() => unfriend(person.player_id))">Cancel</button>
-        </li>
+        </PersonRow>
       </ul>
     </section>
 
     <section class="block">
-      <h2>Your friends <span class="count">{{ list.length }}</span></h2>
+      <h2>Your friends <span class="count">{{ roster.length }}</span></h2>
       <ul v-if="!loaded" class="people" aria-hidden="true">
-        <li v-for="row in 3" :key="row"><span class="ghost"></span></li>
+        <li v-for="row in 3" :key="row" class="ghost"><span></span></li>
       </ul>
-      <p v-else-if="!list.length" class="quiet">Nobody yet. Search a name above.</p>
+      <p v-else-if="!roster.length" class="quiet">Nobody yet. Search a name above.</p>
       <ul v-else class="people">
-        <li v-for="friend in list" :key="friend.player_id" :class="{ away: !friend.online }" :style="{ '--player': inkOf(friend) }">
-          <PlayerMark :colour="inkOf(friend)" :avatar="avatarUrl(friend.avatar)" :name="friend.name" class="chip" />
-          <PlayerLink :id="friend.player_id" linkable class="who">{{ friend.name }}</PlayerLink>
-          <span class="state">{{ friend.online ? (friend.code ? `in ${friend.code}` : 'online') : 'offline' }}</span>
+        <PersonRow v-for="friend in roster" :key="friend.player_id" :person="friend">
           <button v-if="friend.code" type="button" data-tone="quiet" @click="joinFriend(friend.code)">Join them</button>
           <button v-else-if="friend.online && inLobby" type="button" data-tone="quiet" @click="invite(friend.player_id)">Invite</button>
           <button type="button" data-tone="plain" @click="act(() => unfriend(friend.player_id))">Remove</button>
-        </li>
+        </PersonRow>
       </ul>
     </section>
   </template>
@@ -220,40 +204,6 @@ h2 {
   margin-top: var(--space-8);
 }
 
-.people li {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-12);
-  padding-block: var(--space-8);
-  border-bottom: 1px solid var(--rule);
-}
-
-.people li.away {
-  opacity: 0.6;
-}
-
-.chip {
-  --mark: 1.5rem;
-}
-
-.who {
-  flex: 1;
-  min-width: 8ch;
-  font-family: var(--font-display);
-  font-size: var(--text-heading);
-  font-weight: 500;
-  color: color-mix(in oklab, var(--player) 78%, var(--ink));
-}
-
-.state {
-  font-size: var(--text-micro);
-  font-weight: 700;
-  letter-spacing: 0.02em;
-  color: var(--ink-faint);
-  font-family: var(--font-body);
-}
-
 .quiet {
   margin-top: var(--space-12);
   font-size: var(--text-small);
@@ -267,7 +217,13 @@ h2 {
 }
 
 .ghost {
-  display: block;
+  display: flex;
+  align-items: center;
+  padding-block: var(--space-12);
+  border-bottom: 1px solid var(--rule);
+}
+
+.ghost span {
   width: 10ch;
   height: 1.1em;
   background: var(--ground-sunk);

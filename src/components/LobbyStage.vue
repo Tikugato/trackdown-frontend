@@ -1,15 +1,19 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
+import ChatColumn from '@/components/ChatColumn.vue'
 import FriendInvites from '@/components/FriendInvites.vue'
 import PlayerLink from '@/components/PlayerLink.vue'
 import PlayerMark from '@/components/PlayerMark.vue'
 import RulesForm from '@/components/RulesForm.vue'
+import { describeFilter, filterFor, isEmptyFilter } from '@/game/filters'
+import { useMatchCounts } from '@/game/useMatchCounts'
 import { loadPools } from '@/net/http'
 import type { Pool } from '@/net/protocol'
 import {
   avatarOf,
   changeSettings,
+  feedRows,
   inkOf,
   isHost,
   lastError,
@@ -19,6 +23,7 @@ import {
   nameOf,
   profileable,
   roster,
+  say,
   settings,
   startGame,
 } from '@/store/game'
@@ -32,6 +37,7 @@ const copied = ref(false)
 const editing = ref(false)
 const pools = ref<Pool[]>([])
 const loadingPools = ref(true)
+const counts = useMatchCounts(settings)
 
 onMounted(async () => {
   try {
@@ -58,6 +64,15 @@ const rules = computed(() => {
     chosen.allow_suggestions ? 'Title suggestions on' : 'No title suggestions',
   ]
 })
+
+const poolLines = computed(() =>
+  pools.value
+    .filter((pool) => settings.value.pools.includes(pool.id))
+    .map((pool) => {
+      const filter = filterFor(settings.value.filters, pool.id)
+      return isEmptyFilter(filter) ? pool.name : `${pool.name}, ${describeFilter(pool, filter).join(', ')}`
+    }),
+)
 
 async function copyLink(): Promise<void> {
   await navigator.clipboard.writeText(`${location.origin}/${props.code}`)
@@ -109,12 +124,15 @@ function quit(): void {
       <ul v-if="!editing" class="rules">
         <li>{{ modeLine }}</li>
         <li v-for="line in rules" :key="line">{{ line }}</li>
+        <li v-for="line in poolLines" :key="line">{{ line }}</li>
       </ul>
     </section>
+
+    <ChatColumn :rows="feedRows" empty="Say something, the whole room sees it." class="talk" @say="say" />
   </div>
 
   <section v-if="editing" class="editor">
-    <RulesForm :settings="settings" :pools="pools" :loading="loadingPools" @change="changeSettings" />
+    <RulesForm :settings="settings" :pools="pools" :loading="loadingPools" :counts="counts" @change="changeSettings" />
   </section>
 
   <FriendInvites v-if="online.length" :friends="online" @invite="invite" />
@@ -175,9 +193,26 @@ h2 {
 
 .split {
   display: grid;
-  grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.4fr);
   gap: var(--space-48);
   margin-top: var(--space-32);
+}
+
+@media (max-width: 64rem) {
+  .split {
+    grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr);
+  }
+
+  .talk {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 40rem) {
+  .split {
+    grid-template-columns: 1fr;
+    gap: var(--space-32);
+  }
 }
 
 .people li {

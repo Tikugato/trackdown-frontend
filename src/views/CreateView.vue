@@ -2,6 +2,8 @@
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import RulesForm from '@/components/RulesForm.vue'
+import { MIN_POOL_SONGS, keepFilters, tooSmall } from '@/game/filters'
+import { useMatchCounts } from '@/game/useMatchCounts'
 import { loadPools } from '@/net/http'
 import type { Pool, Settings } from '@/net/protocol'
 import { code as lobbyCode, connect, createLobby } from '@/store/game'
@@ -13,14 +15,12 @@ const router = useRouter()
 const pools = ref<Pool[]>([])
 const loading = ref(true)
 const draft = ref<Settings>(rememberedRules())
+const counts = useMatchCounts(draft)
 const failure = ref('')
 const busy = ref(false)
 
 const ready = computed(() => draft.value.pools.length > 0 && !busy.value)
-const ranked = computed(() => {
-  const chosen = pools.value.filter((pool) => draft.value.pools.includes(pool.id))
-  return chosen.length > 0 && chosen.every((pool) => pool.is_rankable)
-})
+const thin = computed(() => pools.value.some((pool) => draft.value.pools.includes(pool.id) && tooSmall(pool, counts.value[pool.id])))
 
 onMounted(async () => {
   if (!playerName.value) {
@@ -29,7 +29,8 @@ onMounted(async () => {
   }
   try {
     pools.value = await loadPools()
-    draft.value = { ...draft.value, pools: stillAvailable() }
+    const live = stillAvailable()
+    draft.value = { ...draft.value, pools: live, filters: keepFilters(draft.value.filters, live) }
   } catch {
     failure.value = 'Could not load the pools.'
   } finally {
@@ -62,9 +63,9 @@ async function make(): Promise<void> {
 <template>
   <h1>New lobby</h1>
 
-  <RulesForm :settings="draft" :pools="pools" :loading="loading" @change="draft = $event" />
+  <RulesForm :settings="draft" :pools="pools" :loading="loading" :counts="counts" @change="draft = $event" />
 
-  <p class="ranked">{{ ranked ? 'This game counts for pool rankings.' : 'This game will not count for rankings.' }}</p>
+  <p v-if="thin" class="thin">A pool under {{ MIN_POOL_SONGS }} songs keeps this game out of the stats.</p>
 
   <div class="go">
     <button type="button" data-tone="loud" :disabled="!ready" @click="make">
@@ -82,10 +83,10 @@ h1 {
   margin-bottom: var(--space-32);
 }
 
-.ranked {
+.thin {
   margin-top: var(--space-12);
   font-size: var(--text-small);
-  color: var(--ink-faint);
+  color: var(--spot-red-text);
 }
 
 .go {

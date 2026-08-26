@@ -1,4 +1,4 @@
-import type { Mode, Settings } from '@/net/protocol'
+import type { Mode } from '@/net/protocol'
 
 export type Choice<T> = { value: T; label: string }
 
@@ -11,7 +11,7 @@ export const MODES: (Choice<Mode> & { blurb: string })[] = [
   {
     value: 'race',
     label: 'Continuous',
-    blurb: 'The round runs on until everyone lands it. Faster is worth more, wrong guesses cost you.',
+    blurb: 'The round runs on until everyone lands it. Faster is worth more and first in keeps the most.',
   },
 ]
 
@@ -53,5 +53,3 @@ export const FLAGS: { key: Flag; label: string }[] = [
   { key: 'allow_replay', label: 'Replay clip' },
   { key: 'allow_suggestions', label: 'Suggest titles while typing' },
 ]
-
-export type RuleKey = Exclude<keyof Settings, 'pools'>

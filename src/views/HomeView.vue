@@ -1,13 +1,17 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { RouterLink, useRoute, useRouter } from 'vue-router'
+import PersonRow from '@/components/PersonRow.vue'
 import TrackdownMark from '@/components/TrackdownMark.vue'
 import { unlockAudio } from '@/game/clip'
 import { enterLobby } from '@/game/useLobbyEntry'
-import { lobbyCode, playerName } from '@/store/session'
+import { loaded, online, roster } from '@/store/friends'
+import { accountKind, lobbyCode, playerName } from '@/store/session'
 
 const route = useRoute()
 const router = useRouter()
+
+const SHOWN = 6
 
 const code = ref(clean(String(route.query.join ?? '')))
 const failure = ref('')
@@ -18,6 +22,8 @@ const joinable = computed(() => named.value && code.value.length === 4 && !busy.
 const closed = computed(() => closedMessage(String(route.query.closed ?? '')))
 const login = computed(() => loginMessage(String(route.query.login ?? '')))
 const rejoinable = computed(() => named.value && lobbyCode.value !== '' && lobbyCode.value !== code.value)
+const isMember = computed(() => accountKind.value === 'discord')
+const shortlist = computed(() => roster.value.slice(0, SHOWN))
 
 function clean(raw: string): string {
   return raw.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 4)
@@ -90,8 +96,25 @@ function go(where: string): void {
 
   <nav class="rest">
     <button type="button" class="big" :disabled="!named" @click="go('/create')">Create a lobby</button>
+    <button type="button" class="big" :disabled="!named" @click="go('/daily')">Daily</button>
     <button type="button" class="big" @click="go('/leaderboard')">Leaderboards</button>
   </nav>
+
+  <section v-if="isMember" class="friends">
+    <h2>Friends <span class="count">{{ online.length }} online</span></h2>
+    <ul v-if="!loaded" aria-hidden="true">
+      <li v-for="row in 3" :key="row" class="ghost"><span></span></li>
+    </ul>
+    <p v-else-if="!roster.length" class="quiet">Nobody yet. <RouterLink to="/friends">Add someone</RouterLink>.</p>
+    <template v-else>
+      <ul>
+        <PersonRow v-for="friend in shortlist" :key="friend.player_id" :person="friend">
+          <button v-if="friend.code" type="button" data-tone="quiet" @click="join(friend.code)">Join them</button>
+        </PersonRow>
+      </ul>
+      <RouterLink v-if="roster.length > SHOWN" to="/friends" class="more">All {{ roster.length }} friends</RouterLink>
+    </template>
+  </section>
 </template>
 
 <style scoped>
@@ -170,7 +193,7 @@ function go(where: string): void {
 
 .rest {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(3, 1fr);
   margin-top: var(--space-32);
   border-top: 1px solid var(--rule);
 }
@@ -180,23 +203,69 @@ function go(where: string): void {
   font-size: var(--text-title);
   font-weight: 300;
   text-align: left;
-  padding: var(--space-24) 0;
+  padding: var(--space-24) var(--space-24) var(--space-24) 0;
   color: var(--ink);
   border-bottom: 1px solid var(--rule);
   transition: color var(--dur-fast) var(--ease-out), padding-left var(--dur-mid) var(--ease-out);
 }
 
-.big:first-child {
-  border-right: 1px solid var(--rule);
-  padding-right: var(--space-24);
+.big + .big {
+  border-left: 1px solid var(--rule);
+  padding-left: var(--space-24);
 }
 
 .big:last-child {
-  padding-left: var(--space-24);
+  padding-right: 0;
 }
 
 .big:not(:disabled):hover {
   color: var(--spot-red-text);
+}
+
+.friends {
+  margin-top: var(--space-48);
+  padding-top: var(--space-16);
+  border-top: 1px solid var(--rule);
+}
+
+.friends h2 {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-8);
+  padding-bottom: var(--space-8);
+}
+
+.count {
+  font-family: var(--font-body);
+  font-size: var(--text-micro);
+  font-weight: 700;
+  color: var(--ink-faint);
+  font-variant-numeric: tabular-nums;
+}
+
+.quiet {
+  font-size: var(--text-small);
+  color: var(--ink-faint);
+}
+
+.more {
+  display: inline-block;
+  margin-top: var(--space-12);
+  font-size: var(--text-small);
+  color: var(--spot-blue-text);
+}
+
+.ghost {
+  display: flex;
+  align-items: center;
+  padding-block: var(--space-12);
+  border-bottom: 1px solid var(--rule);
+}
+
+.ghost span {
+  width: 10ch;
+  height: 1.1em;
+  background: var(--ground-sunk);
 }
 
 @media (max-width: 40rem) {
@@ -212,13 +281,10 @@ function go(where: string): void {
     grid-template-columns: 1fr;
   }
 
-  .big:first-child {
-    border-right: 0;
-    padding-right: 0;
-  }
-
-  .big:last-child {
-    padding-left: 0;
+  .big,
+  .big + .big {
+    border-left: 0;
+    padding-inline: 0;
   }
 }
 </style>

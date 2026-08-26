@@ -2,12 +2,20 @@
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import PlayerMark from '@/components/PlayerMark.vue'
+import SettingChoice from '@/components/SettingChoice.vue'
 import { PLAYER_COLOURS } from '@/game/palette'
 import { sendProfile } from '@/net/socket'
 import { setFriendsCanJoin } from '@/store/friends'
 import { accountKind, friendsCanJoin, playerAvatar, playerColour, playerName, pickColour, rename } from '@/store/session'
+import { setTheme, theme, type ThemeChoice } from '@/store/theme'
 
 const router = useRouter()
+
+const THEMES: { value: ThemeChoice; label: string }[] = [
+  { value: 'system', label: 'System' },
+  { value: 'light', label: 'Paper' },
+  { value: 'dark', label: 'Ink' },
+]
 
 const draftName = ref(playerName.value)
 const saved = ref(false)
@@ -95,6 +103,12 @@ function flash(): void {
     <button type="button" data-tone="chip" class="toggle" :aria-pressed="friendsCanJoin" @click="toggleFriendsCanJoin">
       Friends can join my lobby
     </button>
+  </section>
+
+  <section class="block">
+    <h2>Theme</h2>
+    <p class="hint">Paper is the light one, Ink is the dark one, System follows your device.</p>
+    <SettingChoice label="Look" :options="THEMES" :model-value="theme" @update:model-value="setTheme" />
   </section>
 
   <p v-if="saved" class="saved" role="status">Saved.</p>

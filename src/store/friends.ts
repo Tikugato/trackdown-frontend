@@ -13,6 +13,17 @@ export const invites = ref<Invite[]>([])
 export const loaded = ref(false)
 
 export const online = computed(() => [...friends.values()].filter((friend) => friend.online))
+export const roster = computed(() => [...friends.values()].sort(byPresence))
+
+function seenAt(friend: Friend): number {
+  return friend.last_seen ? Date.parse(friend.last_seen) : 0
+}
+
+function byPresence(a: Friend, b: Friend): number {
+  if (a.online !== b.online) return a.online ? -1 : 1
+  if (!a.online) return seenAt(b) - seenAt(a)
+  return a.name.localeCompare(b.name)
+}
 
 let inviteKey = 0
 
@@ -68,6 +79,7 @@ socket.on('friend_presence', (data) => {
   if (!friend) return
   friend.online = data.online
   friend.code = data.code ?? ''
+  if (!data.online) friend.last_seen = new Date().toISOString()
 })
 
 socket.on('invited', (data) => {

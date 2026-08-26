@@ -27,7 +27,7 @@ export type Person = {
   relation?: Relation
 }
 
-export type Friend = Person & { online: boolean; code?: string }
+export type Friend = Person & { online: boolean; code?: string; last_seen?: string }
 
 export type FriendsPage = {
   friends_can_join: boolean
@@ -43,7 +43,27 @@ export type Pool = {
   description: string
   kind: PoolKind
   song_count: number
-  is_rankable: boolean
+  rating: RatingKind
+  rating_min: number
+  rating_max: number
+  categories: string[]
+}
+
+export type NameFilter = {
+  show?: string[] | undefined
+  show_all?: boolean | undefined
+  hide?: string[] | undefined
+  hide_all?: boolean | undefined
+}
+
+export type PoolFilter = {
+  rating_min?: number | undefined
+  rating_max?: number | undefined
+  ranked_from?: string | undefined
+  ranked_to?: string | undefined
+  categories?: string[] | undefined
+  mappers: NameFilter
+  artists: NameFilter
 }
 
 export type TimeWindow = 'today' | 'week' | 'month' | 'year' | 'all'
@@ -109,6 +129,7 @@ export type Settings = {
   allow_replay: boolean
   allow_suggestions: boolean
   pools: string[]
+  filters?: Record<string, PoolFilter> | undefined
 }
 
 export type Player = {
@@ -156,6 +177,44 @@ export type Lobby = {
   server_time_ms: number
 }
 
+export type DailyState = {
+  challenge_id: string
+  pool_id: string
+  date: string
+  ladder_ms: number[]
+  step: number
+  pattern: string
+  guesses: string[]
+  solved: boolean
+  done: boolean
+  clip_url: string
+  clip_length_ms: number
+  mask?: Mask
+  rating?: RatingKind
+  hint_kinds: HintKind[]
+  hints: Partial<Record<HintKind, string>>
+  track?: Reveal
+  verdict?: Verdict
+  server_time_ms: number
+}
+
+export type DailyEntry = {
+  place: number
+  player_id: string
+  name: string
+  colour?: string
+  avatar?: string
+  points: number
+  played: number
+  solved: number
+  hints: number
+  fastest_ms: number
+}
+
+export type DailyBucket = { clip_length_ms: number; count: number }
+
+export type DailyDistribution = { solved: DailyBucket[]; missed: number }
+
 export type ClientMessage =
   | { type: 'hello'; data: { name: string; colour?: string; resume?: string } }
   | { type: 'create'; data: Settings }
@@ -164,11 +223,16 @@ export type ClientMessage =
   | { type: 'leave'; data: Record<string, never> }
   | { type: 'start'; data: Record<string, never> }
   | { type: 'guess'; data: { text: string } }
+  | { type: 'chat'; data: { text: string } }
   | { type: 'hint'; data: { kind: HintKind } }
   | { type: 'skip'; data: Record<string, never> }
   | { type: 'ping'; data: { client_time_ms: number } }
   | { type: 'profile'; data: { name?: string; colour?: string } }
   | { type: 'invite'; data: { player_id: string } }
+  | { type: 'daily'; data: { pool: string } }
+  | { type: 'daily_guess'; data: { pool: string; text: string } }
+  | { type: 'daily_skip'; data: { pool: string } }
+  | { type: 'daily_hint'; data: { pool: string; kind: HintKind } }
 
 export type ServerMessage =
   | {
@@ -197,6 +261,7 @@ export type ServerMessage =
   | { type: 'lobby_closed'; data: { reason: CloseReason } }
   | { type: 'friend_presence'; data: { player_id: string; online: boolean; code?: string } }
   | { type: 'invited'; data: { player_id: string; name: string; code: string } }
+  | { type: 'daily_state'; data: DailyState }
   | { type: 'error'; id?: string; data: { code: string; message: string } }
 
 export type ServerMessageType = ServerMessage['type']

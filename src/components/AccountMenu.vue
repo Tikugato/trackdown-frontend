@@ -4,7 +4,7 @@ import { RouterLink } from 'vue-router'
 import PlayerMark from '@/components/PlayerMark.vue'
 import type { AccountKind } from '@/net/protocol'
 
-const props = defineProps<{ name: string; kind: AccountKind; colour: string; avatar: string; locked: boolean }>()
+const props = defineProps<{ id: string; name: string; kind: AccountKind; colour: string; avatar: string; locked: boolean }>()
 const emit = defineEmits<{ signIn: [name: string]; signOut: []; logIn: [] }>()
 
 const open = ref(false)
@@ -64,7 +64,7 @@ function discord(): void {
       </template>
 
       <template v-else-if="signedIn">
-        <p class="line">Signed in as {{ name }}{{ isMember ? ' with Discord' : '' }}.</p>
+        <RouterLink v-if="isMember" :to="`/players/${id}`" class="choice" @click="open = false">Profile</RouterLink>
         <RouterLink to="/settings" class="choice" @click="open = false">Settings</RouterLink>
         <button
           v-if="!isMember"
@@ -175,11 +175,6 @@ function discord(): void {
   font-size: var(--text-micro);
   font-weight: 700;
   color: var(--ink-faint);
-}
-
-.line {
-  font-size: var(--text-small);
-  color: var(--ink-soft);
 }
 
 .scrim {

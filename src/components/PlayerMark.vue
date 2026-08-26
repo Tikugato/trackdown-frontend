@@ -24,6 +24,7 @@ watch(
   width: var(--mark);
   height: var(--mark);
   background: var(--player);
+  border-radius: 50%;
   overflow: hidden;
 }
 

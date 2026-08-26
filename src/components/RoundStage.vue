@@ -20,11 +20,10 @@ import {
   unlockAudio,
   volume,
 } from '@/game/clip'
-import { toRows } from '@/game/feed'
 import {
   askHint,
   breather,
-  feed,
+  feedRows,
   guessLocked,
   hints,
   hintsMissing,
@@ -33,12 +32,13 @@ import {
   mode,
   nameOf,
   profileable,
+  rating,
   round,
   roster,
   settings,
   skipVoted,
   solvedThisRound,
-  submitGuess,
+  say,
   totalRounds,
   verdict,
   voteSkip,
@@ -58,7 +58,6 @@ const PLAYBACK: Record<ClipState, string> = {
 
 const nearMiss = ref(false)
 
-const rows = computed(() => toRows(feed.value, { nameOf, inkOf, linkable: profileable, me: playerId.value }))
 const scores = computed<ScoreRow[]>(() =>
   [...roster.value]
     .sort((a, b) => b.score - a.score)
@@ -151,17 +150,12 @@ onBeforeUnmount(stopClip)
 
     <div class="board">
       <div class="column">
-        <GuessFeed :rows="rows" class="feed" />
+        <GuessFeed :rows="feedRows" empty="Type what you think it is. Everyone sees your wrong answers." class="feed" />
         <p v-if="nearMiss" class="near" role="status">
           <span class="mark" aria-hidden="true"></span>
           So close. Not the right track.
         </p>
-        <GuessInput
-          :locked="guessLocked"
-          :disabled="!live"
-          :suggest="settings.allow_suggestions"
-          @guess="submitGuess"
-        />
+        <GuessInput :locked="guessLocked" :live="live" :suggest="settings.allow_suggestions" @guess="say" />
       </div>
 
       <aside class="side">
@@ -170,7 +164,7 @@ onBeforeUnmount(stopClip)
           v-if="settings.hints_enabled"
           :revealed="hints"
           :missing="hintsMissing"
-          :rating="round?.rating ?? 'stars'"
+          :rating="rating"
           :live="live"
           @ask="askHint"
         />

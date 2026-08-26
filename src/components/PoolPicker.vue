@@ -1,14 +1,21 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import type { Pool } from '@/net/protocol'
+import PoolFilterPopover from '@/components/PoolFilterPopover.vue'
+import { filterFor, isEmptyFilter, tooSmall, withFilter } from '@/game/filters'
+import type { Pool, PoolFilter } from '@/net/protocol'
 
 const props = defineProps<{
   pools: Pool[]
   loading: boolean
   selected: string[]
+  filters: Record<string, PoolFilter> | undefined
+  counts: Record<string, number>
 }>()
 
-const emit = defineEmits<{ 'update:selected': [ids: string[]] }>()
+const emit = defineEmits<{
+  'update:selected': [ids: string[]]
+  'update:filters': [filters: Record<string, PoolFilter> | undefined]
+}>()
 
 const BANNERS = import.meta.glob<string>('../assets/pools/*.png', { eager: true, import: 'default', query: '?url' })
 
@@ -35,6 +42,20 @@ function isPicked(id: string): boolean {
 
 function toggle(id: string): void {
   emit('update:selected', isPicked(id) ? props.selected.filter((held) => held !== id) : [...props.selected, id])
+}
+
+function filtered(id: string): boolean {
+  return !isEmptyFilter(filterFor(props.filters, id))
+}
+
+function setFilter(id: string, filter: PoolFilter): void {
+  emit('update:filters', withFilter(props.filters, id, filter))
+}
+
+function songLine(pool: Pool): string {
+  const matched = props.counts[pool.id]
+  if (!filtered(pool.id) || matched === undefined) return `${counter.format(pool.song_count)} songs`
+  return `${counter.format(matched)} of ${counter.format(pool.song_count)} songs`
 }
 </script>
 
@@ -64,8 +85,8 @@ function toggle(id: string): void {
   <p v-else-if="matches.length === 0" class="empty" role="status">No pool matches that.</p>
 
   <ul v-else class="grid">
-    <li v-for="pool in matches" :key="pool.id">
-      <label class="card" :class="{ picked: isPicked(pool.id) }">
+    <li v-for="pool in matches" :key="pool.id" class="card" :class="{ picked: isPicked(pool.id) }">
+      <label class="pick">
         <div class="banner">
           <img v-if="bannerFor(pool.slug)" :src="bannerFor(pool.slug)" alt="" width="563" height="143" />
         </div>
@@ -75,12 +96,17 @@ function toggle(id: string): void {
             <span class="name">{{ pool.name }}</span>
           </p>
           <p class="desc">{{ pool.description }}</p>
-          <p class="meta">
-            <span>{{ counter.format(pool.song_count) }} songs</span>
-            <span>{{ pool.is_rankable ? 'Counts for rankings' : 'Just for fun' }}</span>
-          </p>
         </div>
       </label>
+      <div class="meta">
+        <span :class="{ thin: tooSmall(pool, counts[pool.id]) }">{{ songLine(pool) }}</span>
+        <PoolFilterPopover
+          v-if="isPicked(pool.id)"
+          :pool="pool"
+          :filter="filterFor(filters, pool.id)"
+          @update:filter="setFilter(pool.id, $event)"
+        />
+      </div>
     </li>
   </ul>
 </template>
@@ -111,17 +137,25 @@ function toggle(id: string): void {
 
 .grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(17rem, 100%), 21rem));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: var(--space-16);
 }
 
+@media (max-width: 40rem) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 .card {
-  display: block;
-  margin: 0;
   border: 1px solid var(--rule);
   background: var(--ground-raised);
-  cursor: pointer;
   transition: border-color var(--dur-fast) var(--ease-out);
+}
+
+.pick {
+  display: block;
+  cursor: pointer;
 }
 
 .card:hover {
@@ -150,7 +184,7 @@ function toggle(id: string): void {
 }
 
 .body {
-  padding: var(--space-12) var(--space-16) var(--space-16);
+  padding: var(--space-12) var(--space-16);
 }
 
 .title {
@@ -186,15 +220,21 @@ function toggle(id: string): void {
 .meta {
   display: flex;
   flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
   gap: var(--space-4) var(--space-16);
-  margin-top: var(--space-12);
-  padding-top: var(--space-8);
+  margin-inline: var(--space-16);
+  padding-block: var(--space-8) var(--space-12);
   border-top: 1px solid var(--rule);
   font-size: var(--text-micro);
   font-weight: 700;
   letter-spacing: 0.02em;
   color: var(--ink-faint);
   font-variant-numeric: tabular-nums;
+}
+
+.meta .thin {
+  color: var(--spot-red-text);
 }
 
 .ghost {

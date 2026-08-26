@@ -5,7 +5,7 @@ import { useTicker } from '@/game/useTicker'
 import type { Breather, BreatherTone } from '@/store/game'
 
 const TONES: Record<BreatherTone, string> = {
-  won: 'var(--spot-red)',
+  won: 'var(--spot-green)',
   lost: 'var(--spot-blue)',
   cold: 'var(--spot-ochre)',
 }
@@ -32,7 +32,7 @@ watch(
   <div class="band" :style="{ '--tone': tone }">
     <div class="row">
       <p class="headline">{{ breather.headline }}</p>
-      <p class="next">Next clip</p>
+      <p class="next">{{ breather.final ? 'Results' : 'Next clip' }}</p>
     </div>
     <ProgressRail :fraction="fraction" :tone="tone" />
   </div>

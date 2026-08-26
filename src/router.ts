@@ -5,6 +5,7 @@ export const router = createRouter({
   routes: [
     { path: '/', name: 'home', component: () => import('@/views/HomeView.vue') },
     { path: '/leaderboard', name: 'leaderboard', component: () => import('@/views/LeaderboardView.vue') },
+    { path: '/daily', name: 'daily', component: () => import('@/views/DailyView.vue') },
     { path: '/players/:id', name: 'profile', component: () => import('@/views/ProfileView.vue') },
     { path: '/settings', name: 'settings', component: () => import('@/views/SettingsView.vue') },
     { path: '/friends', name: 'friends', component: () => import('@/views/FriendsView.vue') },

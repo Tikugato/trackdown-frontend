@@ -62,7 +62,7 @@ li {
 }
 
 li.solved .mark {
-  outline: 2px solid var(--spot-red);
+  outline: 2px solid var(--spot-green);
   animation: pop var(--dur-slow) var(--ease-out);
 }
 
@@ -90,7 +90,7 @@ li.gone {
 }
 
 li.solved .value {
-  color: var(--spot-red-text);
+  color: var(--spot-green-text);
   animation: count var(--dur-slow) var(--ease-out);
 }
 

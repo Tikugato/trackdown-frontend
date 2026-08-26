@@ -1,8 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import PlayerMark from '@/components/PlayerMark.vue'
-import { fallbackColour } from '@/game/palette'
-import { avatarUrl } from '@/net/http'
+import PersonRow from '@/components/PersonRow.vue'
 import type { Friend } from '@/net/protocol'
 
 defineProps<{ friends: Friend[] }>()
@@ -20,18 +18,11 @@ function send(playerId: string): void {
   <section class="invites">
     <h2>Friends online</h2>
     <ul>
-      <li v-for="friend in friends" :key="friend.player_id">
-        <PlayerMark
-          :colour="friend.colour || fallbackColour(friend.player_id)"
-          :avatar="avatarUrl(friend.avatar)"
-          :name="friend.name"
-          class="chip"
-        />
-        <span class="who">{{ friend.name }}</span>
+      <PersonRow v-for="friend in friends" :key="friend.player_id" :person="friend">
         <button type="button" data-tone="plain" :disabled="sent.has(friend.player_id)" @click="send(friend.player_id)">
           {{ sent.has(friend.player_id) ? 'Invited' : 'Invite' }}
         </button>
-      </li>
+      </PersonRow>
     </ul>
   </section>
 </template>
@@ -44,23 +35,5 @@ function send(playerId: string): void {
 h2 {
   padding-bottom: var(--space-8);
   border-bottom: 1px solid var(--rule);
-}
-
-li {
-  display: flex;
-  align-items: center;
-  gap: var(--space-8);
-  padding-block: var(--space-8);
-  border-bottom: 1px solid var(--rule);
-}
-
-.chip {
-  --mark: 1.25rem;
-}
-
-.who {
-  flex: 1;
-  font-family: var(--font-display);
-  font-weight: 500;
 }
 </style>

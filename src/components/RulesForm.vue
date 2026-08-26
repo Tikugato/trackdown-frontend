@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 import PoolPicker from '@/components/PoolPicker.vue'
 import SettingChoice from '@/components/SettingChoice.vue'
+import { keepFilters } from '@/game/filters'
 import { BREATHERS, CLIP_LENGTHS, FLAGS, GUESS_TIMES, MODES, ROUND_COUNTS, TARGETS, type Flag } from '@/game/rules'
 import type { Mode, Pool, Settings } from '@/net/protocol'
 
@@ -10,7 +11,7 @@ const RACE_POINTS_PER_ROUND = 100
 const DEFAULT_TARGET = 10
 const DEFAULT_ROUNDS = 10
 
-const props = defineProps<{ settings: Settings; pools: Pool[]; loading: boolean }>()
+const props = defineProps<{ settings: Settings; pools: Pool[]; loading: boolean; counts: Record<string, number> }>()
 const emit = defineEmits<{ change: [settings: Settings] }>()
 
 const bolt = computed(() => props.settings.mode === 'bolt')
@@ -116,7 +117,10 @@ function setRounds(rounds: number): void {
     :pools="pools"
     :loading="loading"
     :selected="settings.pools"
-    @update:selected="apply({ pools: $event })"
+    :filters="settings.filters"
+    :counts="counts"
+    @update:selected="apply({ pools: $event, filters: keepFilters(settings.filters, $event) })"
+    @update:filters="apply({ filters: $event })"
   />
 </template>
 

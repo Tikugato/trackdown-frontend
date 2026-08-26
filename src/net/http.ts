@@ -1,4 +1,16 @@
-import type { Account, FastestEntry, FriendsPage, Person, PointsEntry, Pool, Profile, Relation } from './protocol'
+import type {
+  Account,
+  DailyDistribution,
+  DailyEntry,
+  FastestEntry,
+  FriendsPage,
+  Person,
+  PointsEntry,
+  Pool,
+  PoolFilter,
+  Profile,
+  Relation,
+} from './protocol'
 
 export const apiOrigin = (import.meta.env.VITE_API_ORIGIN ?? '').replace(/\/+$/, '')
 export const socketUrl = new URL(`${apiOrigin}/ws`, location.origin).href.replace(/^http/, 'ws')
@@ -26,6 +38,21 @@ export function loadPools(): Promise<Pool[]> {
   return poolRequest
 }
 
+export async function countSongs(
+  pools: string[],
+  filters: Record<string, PoolFilter>,
+  signal: AbortSignal,
+): Promise<Record<string, number>> {
+  const response = await fetch(`${apiOrigin}/pools/count`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ pools, filters }),
+    signal,
+  })
+  if (!response.ok) throw new Error(`count request failed with ${response.status}`)
+  return (await response.json()) as Record<string, number>
+}
+
 export async function suggestTitles(query: string, signal: AbortSignal): Promise<string[]> {
   const response = await fetch(`${apiOrigin}/autocomplete?q=${encodeURIComponent(query)}`, { signal })
   if (!response.ok) return []
@@ -33,9 +60,17 @@ export async function suggestTitles(query: string, signal: AbortSignal): Promise
 }
 
 async function loadJSON<T>(path: string, query: URLSearchParams, signal: AbortSignal): Promise<T> {
-  const response = await fetch(`${apiOrigin}${path}?${query}`, { signal })
+  const response = await fetch(`${apiOrigin}${path}?${query}`, { signal, credentials: 'include' })
   if (!response.ok) throw new Error(`${path} request failed with ${response.status}`)
   return (await response.json()) as T
+}
+
+export function loadDailyBoard(query: URLSearchParams, signal: AbortSignal): Promise<DailyEntry[]> {
+  return loadJSON('/daily/standings', query, signal)
+}
+
+export function loadDailyDistribution(pool: string, signal: AbortSignal): Promise<DailyDistribution> {
+  return loadJSON('/daily/distribution', new URLSearchParams({ pool }), signal)
 }
 
 export function loadPointsBoard(query: URLSearchParams, signal: AbortSignal): Promise<PointsEntry[]> {
@@ -49,7 +84,7 @@ export function loadFastestBoard(query: URLSearchParams, signal: AbortSignal): P
 }
 
 export async function loadProfile(playerId: string, query: URLSearchParams, signal: AbortSignal): Promise<Profile | null> {
-  const response = await fetch(`${apiOrigin}/players/${encodeURIComponent(playerId)}?${query}`, { signal })
+  const response = await fetch(`${apiOrigin}/players/${encodeURIComponent(playerId)}?${query}`, { signal, credentials: 'include' })
   if (response.status === 404) return null
   if (!response.ok) throw new Error(`profile request failed with ${response.status}`)
   return (await response.json()) as Profile
