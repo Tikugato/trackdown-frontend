@@ -39,7 +39,7 @@ function onScroll(): void {
         <TrackLink :track="row.track" class="answer" />
       </p>
 
-      <p v-else-if="row.kind === 'presence'" class="presence">{{ row.text }}</p>
+      <p v-else-if="row.kind === 'presence' || row.kind === 'skip'" class="presence">{{ row.text }}</p>
 
       <p v-else-if="row.kind === 'solved'" class="solved">
         <span class="mark" aria-hidden="true"></span>

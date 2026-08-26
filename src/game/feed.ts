@@ -7,6 +7,7 @@ export type FeedRow =
   | ({ key: number; kind: 'chat'; text: string } & Voice)
   | ({ key: number; kind: 'solved'; detail: string } & Voice)
   | { key: number; kind: 'presence'; text: string }
+  | { key: number; kind: 'skip'; text: string }
   | { key: number; kind: 'divider'; text: string; track: Reveal }
   | { key: number; kind: 'game'; text: string }
 
@@ -52,6 +53,9 @@ function toRow(entry: FeedEntry, naming: Naming): FeedRow {
   }
   if (entry.kind === 'presence') {
     return { key: entry.key, kind: 'presence', text: `${naming.nameOf(entry.playerId)} ${entry.arrived ? 'joined' : 'left'}` }
+  }
+  if (entry.kind === 'skip') {
+    return { key: entry.key, kind: 'skip', text: `${naming.nameOf(entry.playerId)} wants to skip` }
   }
   if (entry.kind === 'game') {
     return { key: entry.key, kind: 'game', text: entry.over ? `Game ${entry.number} over` : `Game ${entry.number}` }

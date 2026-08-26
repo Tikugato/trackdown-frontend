@@ -249,6 +249,7 @@ export type ServerMessage =
   | { type: 'round_started'; data: Round }
   | { type: 'intermission'; data: { next_ordinal: number; resumes_at_ms: number; server_time_ms: number } }
   | { type: 'solved'; data: { player_id: string; points: number; elapsed_ms: number; place: number } }
+  | { type: 'skip_voted'; data: { player_id: string } }
   | { type: 'chat'; data: { player_id: string; text: string } }
   | { type: 'guess_result'; data: { verdict: Verdict; points: number; elapsed_ms: number } }
   | { type: 'hint'; data: { kind: HintKind; value: string; requested_by: string } }

@@ -143,7 +143,7 @@ onBeforeUnmount(stopClip)
 
       <button v-if="soundBlocked" type="button" data-tone="quiet" @click="unlockAudio">Turn the sound on</button>
 
-      <button type="button" data-tone="quiet" class="skip" :disabled="!live || skipVoted" @click="voteSkip">
+      <button type="button" data-tone="quiet" class="skip" :disabled="!live || skipVoted || (mode === 'race' && solvedThisRound.has(playerId))" @click="voteSkip">
         {{ skipVoted ? 'Skip asked' : 'Skip' }}
       </button>
     </div>

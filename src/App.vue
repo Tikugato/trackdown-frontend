@@ -7,7 +7,7 @@ import TrackdownMark from '@/components/TrackdownMark.vue'
 import { armUnlock } from '@/game/clip'
 import { loginUrl } from '@/net/http'
 import { connectionStatus, disconnect } from '@/net/socket'
-import { code } from '@/store/game'
+import { code, connect } from '@/store/game'
 import { dismissInvite, invites, refreshFriends } from '@/store/friends'
 import { accountKind, playerAvatar, playerColour, playerId, playerName, refreshAccount, signIn, signOut } from '@/store/session'
 
@@ -19,6 +19,7 @@ onMounted(async () => {
   armUnlock()
   await refreshAccount()
   await refreshFriends()
+  if (isMember.value) void connect().catch(() => undefined)
 })
 
 function logIn(): void {
@@ -121,6 +122,10 @@ main {
   border-top: 1px solid var(--rule);
   font-size: var(--text-micro);
   color: var(--ink-faint);
+}
+
+.foot p {
+  max-width: none;
 }
 
 @media (max-width: 40rem) {

@@ -56,6 +56,7 @@ export type FeedEntry =
   | { key: number; kind: 'chat'; playerId: string; text: string }
   | { key: number; kind: 'solved'; playerId: string; points: number; elapsedMs: number; place: number }
   | { key: number; kind: 'presence'; playerId: string; arrived: boolean }
+  | { key: number; kind: 'skip'; playerId: string }
   | { key: number; kind: 'divider'; ordinal: number; outcome: RoundOutcome; track: Reveal }
   | { key: number; kind: 'game'; number: number; over: boolean }
 
@@ -225,6 +226,7 @@ function bind(): void {
     push({ kind: 'presence', playerId: data.player_id, arrived: true })
   })
   socket.on('player_updated', absorb)
+  socket.on('skip_voted', (data) => push({ kind: 'skip', playerId: data.player_id }))
   socket.on('player_left', (data) => {
     seatFor(data.player_id).present = false
     push({ kind: 'presence', playerId: data.player_id, arrived: false })

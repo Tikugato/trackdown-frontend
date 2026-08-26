@@ -151,6 +151,12 @@ function clearSlowTimer(): void {
 }
 
 function schedule(buffer: AudioBuffer, playAtMs: number, clipLengthMs: number, joinedMidRound: boolean): void {
+  const waitMs = untilServerTime(playAtMs)
+  const into = waitMs < 0 && joinedMidRound ? -waitMs / 1000 : 0
+  if (into >= Math.min(buffer.duration, clipLengthMs / 1000)) {
+    clipState.value = 'idle'
+    return
+  }
   const node = context!.createBufferSource()
   node.buffer = buffer
   node.connect(gain!)
@@ -158,22 +164,10 @@ function schedule(buffer: AudioBuffer, playAtMs: number, clipLengthMs: number, j
     if (source === node) clipState.value = 'idle'
   })
   source = node
-
-  const waitMs = untilServerTime(playAtMs)
   if (waitMs >= 0) {
     node.start(context!.currentTime + waitMs / 1000)
     clipState.value = 'ready'
     startTimer = setTimeout(markPlaying, waitMs)
-    return
-  }
-  if (!joinedMidRound) {
-    node.start(context!.currentTime)
-    markPlaying()
-    return
-  }
-  const into = -waitMs / 1000
-  if (into >= Math.min(buffer.duration, clipLengthMs / 1000)) {
-    clipState.value = 'idle'
     return
   }
   node.start(context!.currentTime, into)
