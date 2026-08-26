@@ -32,8 +32,8 @@ function base(entry: Ranked, me: string): Omit<BoardRow, 'stats' | 'value'> {
   }
 }
 
-function plural(count: number, noun: string): string {
-  return `${count} ${noun}${count === 1 ? '' : 's'}`
+function plural(count: number, one: string, many = `${one}s`): string {
+  return `${count} ${count === 1 ? one : many}`
 }
 
 export function pointsRows(entries: PointsEntry[], me: string): BoardRow[] {
@@ -57,12 +57,12 @@ export function dailyRows(entries: DailyEntry[], me: string, single: boolean): B
   return entries.map((entry) => ({
     ...base(entry, me),
     stats: [outcome(entry, single), entry.hints ? plural(entry.hints, 'hint') : ''].filter(Boolean),
-    value: String(entry.points),
+    value: `${entry.points} pts`,
   }))
 }
 
 function outcome(entry: DailyEntry, single: boolean): string {
   if (single) return entry.solved ? `got it at ${clipLabel(entry.fastest_ms)}` : 'missed it'
   const best = entry.fastest_ms ? `, best ${clipLabel(entry.fastest_ms)}` : ''
-  return `${entry.solved}/${plural(entry.played, 'day')}${best}`
+  return `${entry.solved}/${plural(entry.played, 'daily', 'dailies')}${best}`
 }
