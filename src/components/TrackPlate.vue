@@ -8,9 +8,7 @@ const props = defineProps<{
   blurred?: string | undefined
   status: string
   note: string
-  canReplay: boolean
 }>()
-const emit = defineEmits<{ replay: [] }>()
 
 const known = computed(() => props.reveal ?? null)
 const shape = computed(() => props.mask ?? null)
@@ -87,13 +85,6 @@ const countLabel = computed(() => {
         <span class="bar artist"></span>
       </template>
     </div>
-
-    <button type="button" class="again" :disabled="!canReplay" aria-label="Hear the clip again" @click="emit('replay')">
-      <svg viewBox="0 0 32 32" aria-hidden="true">
-        <circle class="body" cx="16" cy="16" r="14" />
-        <path class="arrow" d="M13 11 L23 16 L13 21 Z" />
-      </svg>
-    </button>
   </section>
 </template>
 
@@ -267,35 +258,6 @@ const countLabel = computed(() => {
   width: min(100%, 13rem);
 }
 
-.again {
-  flex: none;
-  padding: 0;
-  width: 3rem;
-  color: var(--spot-red);
-  transition: transform var(--dur-fast) var(--ease-out);
-}
-
-.again svg {
-  width: 100%;
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 2.5;
-  stroke-linejoin: miter;
-}
-
-.again .arrow {
-  fill: currentColor;
-  stroke: none;
-}
-
-.again:disabled {
-  color: var(--ink-faint);
-}
-
-.again:not(:disabled):hover {
-  transform: scale(1.06);
-}
-
 @keyframes arrive {
   from {
     transform: translateY(6px);
@@ -311,10 +273,6 @@ const countLabel = computed(() => {
   .cover {
     width: 3.5rem;
     height: 3.5rem;
-  }
-
-  .again {
-    width: 2.4rem;
   }
 }
 </style>

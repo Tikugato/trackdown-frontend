@@ -13,10 +13,10 @@ import {
   clipSlow,
   clipState,
   playClip,
+  releaseClip,
   replayClip,
   setVolume,
   soundBlocked,
-  stopClip,
   unlockAudio,
   volume,
 } from '@/game/clip'
@@ -81,7 +81,6 @@ const playbackNote = computed(() =>
   clipSlow.value && clipState.value === 'fetching' ? 'Nobody has played this track before, so it is being fetched.' : '',
 )
 const blurredCover = computed(() => hints.get('cover'))
-const canReplay = computed(() => settings.value.allow_replay && clipReady.value)
 const heading = computed(() => {
   const ordinal = round.value?.ordinal ?? 0
   if (mode.value === 'bolt' || !totalRounds.value) return `Round ${ordinal}`
@@ -110,7 +109,7 @@ function onVolume(event: Event): void {
   setVolume(Number((event.target as HTMLInputElement).value))
 }
 
-onBeforeUnmount(stopClip)
+onBeforeUnmount(releaseClip)
 </script>
 
 <template>
@@ -121,8 +120,6 @@ onBeforeUnmount(stopClip)
       :blurred="blurredCover"
       :status="playback"
       :note="playbackNote"
-      :can-replay="canReplay"
-      @replay="replayClip"
     />
 
     <BreatherBand v-if="breather" :breather="breather" />
@@ -137,6 +134,8 @@ onBeforeUnmount(stopClip)
     </div>
 
     <div class="controls">
+      <button v-if="settings.allow_replay" type="button" data-tone="quiet" :disabled="!clipReady" @click="replayClip">Hear it again</button>
+
       <label class="volume">
         <span class="visually-hidden">Volume</span>
         <input type="range" min="0" max="1" step="0.05" :value="volume" @input="onVolume" />

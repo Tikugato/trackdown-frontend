@@ -14,6 +14,7 @@ import {
   clipSlow,
   clipState,
   loadClip,
+  releaseClip,
   replayClip,
   setVolume,
   soundBlocked,
@@ -78,8 +79,10 @@ const missing = computed(() => {
   const offered = new Set(state.value?.hint_kinds ?? [])
   return new Set(boardOrder(state.value?.rating ?? 'stars', false).filter((kind) => !offered.has(kind)))
 })
+const playingTrack = computed(() => done.value && clipState.value === 'playing')
 const playLabel = computed(() => {
   if (!state.value) return 'Play'
+  if (playingTrack.value) return 'Stop track'
   return state.value.done ? 'Play the track' : `Play ${clipLabel(state.value.clip_length_ms)}`
 })
 const playback = computed(() => PLAYBACK[clipState.value])
@@ -144,7 +147,7 @@ watch(verdict, (result) => {
 })
 
 onBeforeUnmount(() => {
-  stopClip()
+  releaseClip()
   closeDaily()
   standingsRequest?.abort()
   distributionRequest?.abort()
@@ -159,6 +162,7 @@ function logIn(): void {
 }
 
 async function play(): Promise<void> {
+  if (playingTrack.value) return stopClip()
   unlockAudio()
   if (!clipReady.value && state.value) {
     if (!(await loadClip(state.value.clip_url))) return
@@ -250,8 +254,6 @@ async function share(): Promise<void> {
       :blurred="revealed.get('cover')"
       :status="playback"
       :note="playbackNote"
-      :can-replay="clipReady"
-      @replay="play"
     />
 
     <DailyLadder :ladder="state.ladder_ms" :step="state.step" :done="done" :pattern="state.pattern" />

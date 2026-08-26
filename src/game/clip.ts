@@ -95,19 +95,23 @@ export function replayClip(): void {
 }
 
 export function stopClip(): void {
-  clearSlowTimer()
-  if (startTimer) clearTimeout(startTimer)
-  startTimer = null
   source?.stop()
   source?.disconnect()
   source = null
-  held = null
-  clipReady.value = false
   clipState.value = 'idle'
 }
 
-export async function loadClip(path: string): Promise<boolean> {
+export function releaseClip(): void {
+  clearSlowTimer()
+  if (startTimer) clearTimeout(startTimer)
+  startTimer = null
   stopClip()
+  held = null
+  clipReady.value = false
+}
+
+export async function loadClip(path: string): Promise<boolean> {
+  releaseClip()
   unlockAudio()
   if (!context || !gain) return false
   const buffer = await decode(path)
