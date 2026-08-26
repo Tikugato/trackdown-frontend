@@ -295,7 +295,7 @@ async function share(): Promise<void> {
       </div>
 
       <aside class="side">
-        <HintBoard :revealed="revealed" :missing="missing" :rating="state.rating ?? 'stars'" :pooled="false" :live="!done" @ask="askDailyHint" />
+        <HintBoard :revealed="revealed" :missing="missing" :rating="state.rating ?? 'stars'" :pooled="false" :askable="!done" @ask="askDailyHint" />
       </aside>
     </div>
 

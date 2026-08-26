@@ -29,7 +29,7 @@ onMounted(async () => {
   }
   try {
     pools.value = await loadPools()
-    const live = stillAvailable()
+    const live = pools.value.filter((pool) => draft.value.pools.includes(pool.id)).map((pool) => pool.id)
     draft.value = { ...draft.value, pools: live, filters: keepFilters(draft.value.filters, live) }
   } catch {
     failure.value = 'Could not load the pools.'
@@ -37,11 +37,6 @@ onMounted(async () => {
     loading.value = false
   }
 })
-
-function stillAvailable(): string[] {
-  const live = pools.value.filter((pool) => draft.value.pools.includes(pool.id)).map((pool) => pool.id)
-  return live.length > 0 ? live : pools.value.slice(0, 1).map((pool) => pool.id)
-}
 
 async function make(): Promise<void> {
   if (!ready.value) return

@@ -75,6 +75,7 @@ const scores = computed<ScoreRow[]>(() =>
 )
 
 const live = computed(() => round.value !== null)
+const askable = computed(() => live.value && !solvedThisRound.has(playerId.value))
 const playback = computed(() => PLAYBACK[clipState.value])
 const playbackNote = computed(() =>
   clipSlow.value && clipState.value === 'fetching' ? 'Nobody has played this track before, so it is being fetched.' : '',
@@ -166,7 +167,7 @@ onBeforeUnmount(stopClip)
           :missing="hintsMissing"
           :rating="rating"
           :pooled="settings.pools.length > 1"
-          :live="live"
+          :askable="askable"
           @ask="askHint"
         />
       </aside>

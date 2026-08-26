@@ -7,7 +7,7 @@ defineProps<{
   missing: Set<HintKind>
   rating: RatingKind
   pooled: boolean
-  live: boolean
+  askable: boolean
 }>()
 
 const emit = defineEmits<{ ask: [kind: HintKind] }>()
@@ -37,7 +37,7 @@ const emit = defineEmits<{ ask: [kind: HintKind] }>()
         <span v-else-if="kind === 'cover' && revealed.has(kind)" class="value">Revealed</span>
         <span v-else-if="revealed.has(kind)" class="value">{{ revealed.get(kind) }}</span>
         <span v-else-if="missing.has(kind)" class="absent">not this round</span>
-        <button v-else type="button" data-tone="plain" :disabled="!live" @click="emit('ask', kind)">Reveal</button>
+        <button v-else type="button" data-tone="plain" :disabled="!askable" @click="emit('ask', kind)">Reveal</button>
       </li>
     </ul>
   </section>
