@@ -14,6 +14,13 @@ const emit = defineEmits<{ replay: [] }>()
 
 const known = computed(() => props.reveal ?? null)
 const shape = computed(() => props.mask ?? null)
+
+const countLabel = computed(() => {
+  const words = shape.value
+  if (!words) return ''
+  const title = `${words.title} ${words.title === 1 ? 'word' : 'words'} in the title`
+  return words.artist ? `${title}, ${words.artist} in the artist` : title
+})
 </script>
 
 <template>
@@ -58,8 +65,13 @@ const shape = computed(() => props.mask ?? null)
       </template>
 
       <template v-else-if="shape">
-        <p class="title shape">{{ shape.title }}</p>
-        <p v-if="shape.artist" class="artist shape">{{ shape.artist }}</p>
+        <p class="blanks lead">
+          <span v-for="word in shape.title" :key="word" class="blank"></span>
+        </p>
+        <p v-if="shape.artist" class="blanks">
+          <span v-for="word in shape.artist" :key="word" class="blank"></span>
+        </p>
+        <p class="count">{{ countLabel }}</p>
       </template>
 
       <template v-else>
@@ -200,9 +212,27 @@ const shape = computed(() => props.mask ?? null)
   animation: arrive var(--dur-slow) var(--ease-out);
 }
 
-.shape {
-  font-family: var(--font-stamp);
-  letter-spacing: 0.12em;
+.blanks {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--space-8);
+}
+
+.blank {
+  width: 2.5rem;
+  height: 1rem;
+  border-bottom: 2px solid var(--ink-faint);
+}
+
+.blanks.lead .blank {
+  width: 3.25rem;
+  height: 1.4rem;
+}
+
+.count {
+  margin-top: var(--space-4);
+  font-size: var(--text-micro);
   color: var(--ink-faint);
 }
 

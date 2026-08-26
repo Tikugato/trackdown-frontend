@@ -59,7 +59,7 @@ const rules = computed(() => {
     mode.value === 'bolt' ? `First to ${chosen.points_to_win}` : `${chosen.max_rounds} rounds`,
     `${chosen.intermission_ms / 1000} second breather`,
     chosen.hints_enabled ? 'Hints on' : 'Hints off',
-    chosen.mask_enabled ? 'Title shape shown' : 'No title shape',
+    chosen.mask_enabled ? 'Word count shown' : 'No word count',
     chosen.allow_replay ? 'Replay allowed' : 'One listen only',
     chosen.allow_suggestions ? 'Title suggestions on' : 'No title suggestions',
   ]

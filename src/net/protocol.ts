@@ -144,7 +144,7 @@ export type Player = {
   reason?: LeaveReason
 }
 
-export type Mask = { title: string; artist?: string }
+export type Mask = { title: number; artist?: number }
 
 export type Reveal = {
   title: string

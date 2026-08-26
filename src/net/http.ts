@@ -91,8 +91,9 @@ export async function loadProfile(playerId: string, query: URLSearchParams, sign
 }
 
 export function loginUrl(playerId: string): string {
-  const target = `${apiOrigin}/auth/discord/login`
-  return playerId ? `${target}?player=${encodeURIComponent(playerId)}` : target
+  const query = new URLSearchParams({ return: location.origin })
+  if (playerId) query.set('player', playerId)
+  return `${apiOrigin}/auth/discord/login?${query}`
 }
 
 async function withSession(path: string, init: RequestInit = {}): Promise<Response> {

@@ -34,7 +34,7 @@ export const DEFAULT_SETTINGS: Settings = {
   max_rounds: 30,
   intermission_ms: 5000,
   hints_enabled: true,
-  mask_enabled: true,
+  mask_enabled: false,
   allow_replay: true,
   allow_suggestions: true,
   pools: [],
