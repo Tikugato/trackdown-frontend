@@ -1,7 +1,7 @@
 export const PLAYER_COLOURS = [
   '#d0453b',
-  '#c96a24',
-  '#b08a16',
+  '#bd6526',
+  '#a07a1a',
   '#4e8c3f',
   '#2c8a80',
   '#3b6fc4',

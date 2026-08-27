@@ -261,7 +261,7 @@ onBeforeUnmount(releaseClip)
   align-items: center;
   gap: var(--space-8);
   padding-block: var(--space-8);
-  color: var(--spot-ochre);
+  color: var(--ink-soft);
   font-weight: 700;
 }
 

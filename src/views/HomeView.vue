@@ -204,7 +204,7 @@ function go(where: string): void {
   padding: var(--space-24) var(--space-24) var(--space-24) 0;
   color: var(--ink);
   border-bottom: 1px solid var(--rule);
-  transition: color var(--dur-fast) var(--ease-out), padding-left var(--dur-mid) var(--ease-out);
+  transition: color var(--dur-fast) var(--ease-out);
 }
 
 .big + .big {

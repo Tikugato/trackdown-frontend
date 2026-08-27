@@ -96,7 +96,7 @@ input {
 }
 
 input::placeholder {
-  color: var(--ink-faint);
+  color: var(--ink-soft);
 }
 
 :focus-visible {
@@ -106,7 +106,7 @@ input::placeholder {
 
 ::selection {
   background: var(--spot-ochre);
-  color: var(--ink);
+  color: var(--on-spot);
 }
 
 .visually-hidden {
