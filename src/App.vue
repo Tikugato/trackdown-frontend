@@ -134,5 +134,9 @@ main {
   .foot {
     padding-inline: var(--space-16);
   }
+
+  main {
+    padding-block: var(--space-16) var(--space-24);
+  }
 }
 </style>

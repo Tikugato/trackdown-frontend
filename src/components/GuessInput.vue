@@ -108,6 +108,8 @@ onBeforeUnmount(close)
         v-model="text"
         role="combobox"
         autocomplete="off"
+        autocorrect="off"
+        enterkeyhint="send"
         spellcheck="false"
         maxlength="280"
         :aria-expanded="open"
@@ -132,7 +134,7 @@ onBeforeUnmount(close)
 .options {
   border-bottom: 1px solid var(--rule);
   margin-bottom: var(--space-12);
-  max-height: 12rem;
+  max-height: min(12rem, 32dvh);
   overflow-y: auto;
 }
 

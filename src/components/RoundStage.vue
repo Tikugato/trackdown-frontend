@@ -57,6 +57,7 @@ const PLAYBACK: Record<ClipState, string> = {
 }
 
 const nearMiss = ref(false)
+const hintsOpen = ref(false)
 
 const scores = computed<ScoreRow[]>(() =>
   [...roster.value]
@@ -143,6 +144,17 @@ onBeforeUnmount(releaseClip)
 
       <button v-if="soundBlocked" type="button" data-tone="quiet" @click="unlockAudio">Turn the sound on</button>
 
+      <button
+        v-if="settings.hints_enabled"
+        type="button"
+        data-tone="quiet"
+        class="peek"
+        :aria-expanded="hintsOpen"
+        @click="hintsOpen = !hintsOpen"
+      >
+        {{ hintsOpen ? 'Hide hints' : 'Hints' }}
+      </button>
+
       <button type="button" data-tone="quiet" class="skip" :disabled="!live || skipVoted || (mode === 'race' && solvedThisRound.has(playerId))" @click="voteSkip">
         {{ skipVoted ? 'Skip asked' : 'Skip' }}
       </button>
@@ -158,10 +170,11 @@ onBeforeUnmount(releaseClip)
         <GuessInput :locked="guessLocked" :live="live" :suggest="settings.allow_suggestions ? settings : undefined" @guess="say" />
       </div>
 
-      <aside class="side">
+      <aside class="side" :class="{ open: hintsOpen }">
         <ScorePanel :rows="scores" />
         <HintBoard
           v-if="settings.hints_enabled"
+          class="hint-board"
           :revealed="hints"
           :missing="hintsMissing"
           :rating="rating"
@@ -230,6 +243,10 @@ onBeforeUnmount(releaseClip)
   margin-left: auto;
 }
 
+.peek {
+  display: none;
+}
+
 .board {
   flex: 1;
   display: grid;
@@ -272,23 +289,54 @@ onBeforeUnmount(releaseClip)
 }
 
 @media (max-width: 52rem) {
+  .stage {
+    height: calc(100dvh - 13rem);
+    min-height: 22rem;
+  }
+
+  .volume {
+    display: none;
+  }
+
+  .peek {
+    display: block;
+  }
+
   .board {
-    grid-template-columns: 1fr;
-    grid-template-rows: auto minmax(0, 1fr);
+    display: flex;
+    flex-direction: column;
     gap: var(--space-12);
   }
 
   .column {
     order: 2;
+    flex: 1;
+    min-height: 0;
   }
 
   .side {
     order: 1;
-    overflow: visible;
+    gap: var(--space-12);
+    max-height: 40dvh;
+  }
+
+  .hint-board {
+    display: none;
+  }
+
+  .side.open .hint-board {
+    display: block;
   }
 
   .skip {
     margin-left: 0;
+  }
+}
+
+@media (max-width: 40rem) {
+  .stage {
+    height: calc(100dvh - 10.5rem);
+    min-height: 20rem;
   }
 }
 </style>
