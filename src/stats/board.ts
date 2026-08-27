@@ -1,4 +1,5 @@
 import { clipLabel } from '@/game/daily'
+import { ago } from '@/game/when'
 import { trackLabel } from '@/game/track'
 import { fallbackColour } from '@/game/palette'
 import { avatarUrl } from '@/net/http'
@@ -56,7 +57,7 @@ export function fastestRows(entries: FastestEntry[], me: string, when: Intl.Date
 export function dailyRows(entries: DailyEntry[], me: string, single: boolean): BoardRow[] {
   return entries.map((entry) => ({
     ...base(entry, me),
-    stats: [outcome(entry, single), entry.hints ? plural(entry.hints, 'hint') : ''].filter(Boolean),
+    stats: [outcome(entry, single), single ? ago(entry.solved_at) : '', entry.hints ? plural(entry.hints, 'hint') : ''].filter(Boolean),
     value: `${entry.points} pts`,
   }))
 }

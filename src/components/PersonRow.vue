@@ -3,18 +3,9 @@ import { computed } from 'vue'
 import PlayerLink from '@/components/PlayerLink.vue'
 import PlayerMark from '@/components/PlayerMark.vue'
 import { fallbackColour } from '@/game/palette'
+import { ago } from '@/game/when'
 import { avatarUrl } from '@/net/http'
 import type { Friend, Person } from '@/net/protocol'
-
-const STEPS: [Intl.RelativeTimeFormatUnit, number][] = [
-  ['year', 31_536_000_000],
-  ['month', 2_592_000_000],
-  ['day', 86_400_000],
-  ['hour', 3_600_000],
-  ['minute', 60_000],
-]
-
-const relative = new Intl.RelativeTimeFormat(undefined, { numeric: 'auto' })
 
 const props = defineProps<{ person: Person | Friend }>()
 
@@ -25,16 +16,7 @@ const away = computed(() => 'online' in props.person && !props.person.online)
 function standing(friend: Friend): string {
   if (friend.code) return `in ${friend.code}`
   if (friend.online) return 'online'
-  return lastSeen(friend.last_seen)
-}
-
-function lastSeen(stamp?: string): string {
-  const at = stamp ? Date.parse(stamp) : Number.NaN
-  if (Number.isNaN(at)) return 'offline'
-  const gap = Date.now() - at
-  const step = STEPS.find(([, span]) => gap >= span)
-  if (!step) return 'just now'
-  return relative.format(-Math.floor(gap / step[1]), step[0])
+  return ago(friend.last_seen) || 'offline'
 }
 </script>
 

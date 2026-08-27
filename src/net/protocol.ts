@@ -212,6 +212,7 @@ export type DailyEntry = {
   solved: number
   hints: number
   fastest_ms: number
+  solved_at?: string
 }
 
 export type DailyBucket = { clip_length_ms: number; count: number }
