@@ -4,15 +4,14 @@ import { useRouter } from 'vue-router'
 import RulesForm from '@/components/RulesForm.vue'
 import { MIN_POOL_SONGS, keepFilters, tooSmall } from '@/game/filters'
 import { useMatchCounts } from '@/game/useMatchCounts'
-import { loadPools } from '@/net/http'
-import type { Pool, Settings } from '@/net/protocol'
+import type { Settings } from '@/net/protocol'
 import { code as lobbyCode, connect, createLobby } from '@/store/game'
+import { ensurePools, pools } from '@/store/pools'
 import { rememberRules, rememberedRules } from '@/store/preferences'
 import { playerName } from '@/store/session'
 
 const router = useRouter()
 
-const pools = ref<Pool[]>([])
 const loading = ref(true)
 const draft = ref<Settings>(rememberedRules())
 const counts = useMatchCounts(draft)
@@ -28,7 +27,7 @@ onMounted(async () => {
     return
   }
   try {
-    pools.value = await loadPools()
+    await ensurePools()
     const live = pools.value.filter((pool) => draft.value.pools.includes(pool.id)).map((pool) => pool.id)
     draft.value = { ...draft.value, pools: live, filters: keepFilters(draft.value.filters, live) }
   } catch {

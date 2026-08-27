@@ -8,8 +8,6 @@ import PlayerMark from '@/components/PlayerMark.vue'
 import RulesForm from '@/components/RulesForm.vue'
 import { describeFilter, filterFor, isEmptyFilter } from '@/game/filters'
 import { useMatchCounts } from '@/game/useMatchCounts'
-import { loadPools } from '@/net/http'
-import type { Pool } from '@/net/protocol'
 import {
   avatarOf,
   changeSettings,
@@ -28,6 +26,7 @@ import {
   startGame,
 } from '@/store/game'
 import { invite, online } from '@/store/friends'
+import { ensurePools, pools, poolsReady } from '@/store/pools'
 import { playerId } from '@/store/session'
 
 const props = defineProps<{ code: string; joining: boolean; failure: string }>()
@@ -35,17 +34,9 @@ const props = defineProps<{ code: string; joining: boolean; failure: string }>()
 const router = useRouter()
 const copied = ref(false)
 const editing = ref(false)
-const pools = ref<Pool[]>([])
-const loadingPools = ref(true)
 const counts = useMatchCounts(settings)
 
-onMounted(async () => {
-  try {
-    pools.value = await loadPools()
-  } finally {
-    loadingPools.value = false
-  }
-})
+onMounted(() => void ensurePools().catch(() => {}))
 
 const modeLine = computed(() =>
   mode.value === 'bolt' ? 'Bolt, first to the target takes it' : 'Continuous, everyone keeps guessing',
@@ -132,7 +123,7 @@ function quit(): void {
   </div>
 
   <section v-if="editing" class="editor">
-    <RulesForm :settings="settings" :pools="pools" :loading="loadingPools" :counts="counts" @change="changeSettings" />
+    <RulesForm :settings="settings" :pools="pools" :loading="!poolsReady" :counts="counts" @change="changeSettings" />
   </section>
 
   <FriendInvites v-if="online.length" :friends="online" @invite="invite" />

@@ -3,11 +3,12 @@ import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import BoardList from '@/components/BoardList.vue'
 import StatFilters from '@/components/StatFilters.vue'
-import { loadDailyBoard, loadFastestBoard, loadPointsBoard, loadPools } from '@/net/http'
-import type { DailyEntry, FastestEntry, PointsEntry, PointsSort, Pool } from '@/net/protocol'
+import { loadDailyBoard, loadFastestBoard, loadPointsBoard } from '@/net/http'
+import type { DailyEntry, FastestEntry, PointsEntry, PointsSort } from '@/net/protocol'
 import { trackLabel } from '@/game/track'
 import { type BoardRow, dailyRows, fastestRows, pointsRows } from '@/stats/board'
 import { toSearchParams, useStatFilter } from '@/stats/filter'
+import { ensurePools, pools, poolsReady } from '@/store/pools'
 import { accountKind, playerId } from '@/store/session'
 
 type BoardName = 'points' | 'fastest' | 'daily'
@@ -41,7 +42,6 @@ const sort = computed<PointsSort>(() => {
 })
 const member = computed(() => accountKind.value === 'discord')
 
-const pools = ref<Pool[]>([])
 const points = ref<PointsEntry[]>([])
 const fastest = ref<FastestEntry[]>([])
 const daily = ref<DailyEntry[]>([])
@@ -64,15 +64,11 @@ const empty = computed(() =>
     : 'Nothing matches that yet. Guests do not count, so log in with Discord before you play to show up here.',
 )
 
-onMounted(async () => {
-  try {
-    pools.value = await loadPools()
-  } catch {
-    pools.value = []
-  }
-})
+onMounted(() => void ensurePools().catch(() => {}))
 
-watch([filter, board, sort], () => void fetchPage(0), { immediate: true })
+watch([filter, board, sort, poolsReady], () => {
+  if (poolsReady.value) void fetchPage(0)
+}, { immediate: true })
 
 async function fetchPage(offset: number): Promise<void> {
   inFlight?.abort()

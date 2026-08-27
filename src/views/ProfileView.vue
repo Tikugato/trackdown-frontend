@@ -5,17 +5,17 @@ import PlayerMark from '@/components/PlayerMark.vue'
 import StatFilters from '@/components/StatFilters.vue'
 import { fallbackColour } from '@/game/palette'
 import { trackLabel } from '@/game/track'
-import { avatarUrl, loadPools, loadProfile } from '@/net/http'
-import type { Pool, Profile } from '@/net/protocol'
+import { avatarUrl, loadProfile } from '@/net/http'
+import type { Profile } from '@/net/protocol'
 import { percent, seconds, toQuery, toSearchParams, useStatFilter } from '@/stats/filter'
 import { RELATIONS, befriend } from '@/store/friends'
+import { ensurePools, pools, poolsReady } from '@/store/pools'
 import { accountKind, playerId } from '@/store/session'
 
 const route = useRoute()
 const { filter, update } = useStatFilter()
 
 const id = computed(() => String(route.params.id ?? ''))
-const pools = ref<Pool[]>([])
 const profile = ref<Profile | null>(null)
 const missing = ref(false)
 const loading = ref(true)
@@ -48,15 +48,11 @@ const fastestQuery = computed(() => ({
   song: profile.value?.stats.fastest?.song_id ?? '',
 }))
 
-onMounted(async () => {
-  try {
-    pools.value = await loadPools()
-  } catch {
-    pools.value = []
-  }
-})
+onMounted(() => void ensurePools().catch(() => {}))
 
-watch([id, filter], () => void fetch(), { immediate: true })
+watch([id, filter, poolsReady], () => {
+  if (poolsReady.value) void fetch()
+}, { immediate: true })
 
 async function addFriend(): Promise<void> {
   if (!profile.value || !canBefriend.value) return

@@ -25,19 +25,10 @@ export function apiUrl(path: string): string {
   return `${apiOrigin}${path}`
 }
 
-let poolRequest: Promise<Pool[]> | null = null
-
-export function loadPools(): Promise<Pool[]> {
-  poolRequest ??= fetch(`${apiOrigin}/pools`)
-    .then((response) => {
-      if (!response.ok) throw new Error(`pools request failed with ${response.status}`)
-      return response.json() as Promise<Pool[]>
-    })
-    .catch((reason: unknown) => {
-      poolRequest = null
-      throw reason
-    })
-  return poolRequest
+export async function loadPools(): Promise<Pool[]> {
+  const response = await fetch(`${apiOrigin}/pools`)
+  if (!response.ok) throw new Error(`pools request failed with ${response.status}`)
+  return (await response.json()) as Pool[]
 }
 
 export async function countSongs(

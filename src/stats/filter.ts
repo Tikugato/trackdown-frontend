@@ -2,6 +2,7 @@ import { computed, type ComputedRef } from 'vue'
 import { useRoute, useRouter, type LocationQuery, type LocationQueryRaw } from 'vue-router'
 import { LADDER_MS } from '@/game/daily'
 import type { HintKind, Mode, PoolFilter, Settings, TimeWindow } from '@/net/protocol'
+import { poolIdOf, poolSlug } from '@/store/pools'
 
 export type SettingKey = Exclude<keyof Settings, 'pools' | 'mode' | 'filters'>
 export type ModeFilter = Mode | 'any'
@@ -89,14 +90,28 @@ function isPoolFilter(value: unknown): value is PoolFilter {
   return isRecord(value) && isRecord(value.mappers) && isRecord(value.artists)
 }
 
+function rekeyFilters(
+  filters: Record<string, PoolFilter> | undefined,
+  translate: (key: string) => string,
+): Record<string, PoolFilter> | undefined {
+  if (!filters) return undefined
+  const rekeyed: Record<string, PoolFilter> = {}
+  for (const [key, filter] of Object.entries(filters)) {
+    const wanted = translate(key)
+    if (wanted) rekeyed[wanted] = filter
+  }
+  return Object.keys(rekeyed).length ? rekeyed : undefined
+}
+
 function filtersFrom(raw: string): Record<string, PoolFilter> | undefined {
   if (!raw) return undefined
   try {
     const parsed: unknown = JSON.parse(raw)
     if (!isRecord(parsed)) return undefined
     const filters: Record<string, PoolFilter> = {}
-    for (const [id, filter] of Object.entries(parsed)) {
-      if (isPoolFilter(filter)) filters[id] = filter
+    for (const [slug, filter] of Object.entries(parsed)) {
+      const id = poolIdOf(slug)
+      if (id && isPoolFilter(filter)) filters[id] = filter
     }
     return Object.keys(filters).length ? filters : undefined
   } catch {
@@ -114,7 +129,7 @@ export function fromQuery(query: LocationQuery): StatFilter {
   return {
     time: WINDOWS.has(time) ? (time as TimeWindow) : 'all',
     mode: modeFrom(first(query.mode)),
-    pools: list(first(query.pools)),
+    pools: list(first(query.pools)).map(poolIdOf).filter(Boolean),
     filters: filtersFrom(first(query.filters)),
     hints: hintsFrom(first(query.hints)),
     settings,
@@ -125,11 +140,9 @@ export function fromQuery(query: LocationQuery): StatFilter {
   }
 }
 
-export function toQuery(filter: StatFilter): Record<string, string> {
+function shared(filter: StatFilter): Record<string, string> {
   const query: Record<string, string> = { ...filter.settings, mode: filter.mode }
   if (filter.time !== 'all') query.time = filter.time
-  if (filter.pools.length) query.pools = filter.pools.join(',')
-  if (filter.filters) query.filters = JSON.stringify(filter.filters)
   if (filter.hints !== 'any') query.hints = Array.isArray(filter.hints) ? filter.hints.join(',') : filter.hints
   if (filter.search) query.search = filter.search
   if (filter.song) query.song = filter.song
@@ -138,8 +151,20 @@ export function toQuery(filter: StatFilter): Record<string, string> {
   return query
 }
 
+export function toQuery(filter: StatFilter): Record<string, string> {
+  const query = shared(filter)
+  const slugs = filter.pools.map(poolSlug).filter(Boolean)
+  const filters = rekeyFilters(filter.filters, poolSlug)
+  if (slugs.length) query.pools = slugs.join(',')
+  if (filters) query.filters = JSON.stringify(filters)
+  return query
+}
+
 export function toSearchParams(filter: StatFilter): URLSearchParams {
-  const params = new URLSearchParams(toQuery(filter))
+  const query = shared(filter)
+  if (filter.pools.length) query.pools = filter.pools.join(',')
+  if (filter.filters) query.filters = JSON.stringify(filter.filters)
+  const params = new URLSearchParams(query)
   if (filter.mode === 'any') params.delete('mode')
   return params
 }

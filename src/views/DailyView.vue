@@ -24,10 +24,11 @@ import {
 } from '@/game/clip'
 import { clipLabel, distRows, distTotal, nextDailyAt, shareText, type DistRow } from '@/game/daily'
 import { boardOrder } from '@/game/hints'
-import { apiUrl, loadDailyBoard, loadDailyDistribution, loadPools, loginUrl } from '@/net/http'
-import type { HintKind, Pool } from '@/net/protocol'
+import { apiUrl, loadDailyBoard, loadDailyDistribution, loginUrl } from '@/net/http'
+import type { HintKind } from '@/net/protocol'
 import { dailyRows } from '@/stats/board'
 import { askDailyHint, busy, closeDaily, failure, guessDaily, openDaily, skipDaily, state, verdict } from '@/store/daily'
+import { ensurePools, poolIdOf, pools } from '@/store/pools'
 import { accountKind, playerId } from '@/store/session'
 import { readStored, writeStored } from '@/store/storage'
 
@@ -47,7 +48,6 @@ const PLAYBACK: Record<ClipState, string> = {
 const route = useRoute()
 const router = useRouter()
 
-const pools = ref<Pool[]>([])
 const nearMiss = ref(false)
 const copied = ref(false)
 const standings = ref<ReturnType<typeof dailyRows>>([])
@@ -61,12 +61,14 @@ let heard = ''
 
 const member = computed(() => accountKind.value === 'discord')
 const poolId = computed(() => {
-  const wanted = String(route.query.pool ?? '')
-  if (pools.value.some((pool) => pool.id === wanted)) return wanted
+  const wanted = poolIdOf(String(route.query.pool ?? ''))
+  if (wanted) return wanted
   const remembered = readStored(localStorage, POOL_KEY)
   return pools.value.some((pool) => pool.id === remembered) ? remembered : (pools.value[0]?.id ?? '')
 })
-const poolName = computed(() => pools.value.find((pool) => pool.id === poolId.value)?.name ?? '')
+const chosen = computed(() => pools.value.find((pool) => pool.id === poolId.value))
+const poolName = computed(() => chosen.value?.name ?? '')
+const poolSlug = computed(() => chosen.value?.slug ?? '')
 const done = computed(() => state.value?.done ?? false)
 const revealed = computed(() => {
   const held = new Map<HintKind, string>()
@@ -105,11 +107,11 @@ const dateLabel = computed(() => {
   return day.format(new Date(`${state.value.date}T00:00:00Z`))
 })
 const nextLabel = new Intl.DateTimeFormat(undefined, { timeStyle: 'short' }).format(nextDailyAt())
-const boardQuery = computed(() => ({ board: 'daily', pools: poolId.value, time: 'today' }))
+const boardQuery = computed(() => ({ board: 'daily', pools: poolSlug.value, time: 'today' }))
 
 onMounted(async () => {
   try {
-    pools.value = await loadPools()
+    await ensurePools()
   } catch {
     failure.value = 'Could not load the pools.'
   }
@@ -153,8 +155,8 @@ onBeforeUnmount(() => {
   distributionRequest?.abort()
 })
 
-function choosePool(id: string): void {
-  void router.replace({ query: { ...route.query, pool: id } })
+function choosePool(slug: string): void {
+  void router.replace({ query: { ...route.query, pool: slug } })
 }
 
 function logIn(): void {
@@ -218,7 +220,7 @@ async function share(): Promise<void> {
         pattern: held.pattern,
         ladder: held.ladder_ms,
         hints: Object.keys(held.hints).length,
-        url: `${location.origin}/daily?pool=${poolId.value}`,
+        url: `${location.origin}/daily?pool=${poolSlug.value}`,
       }),
     )
     copied.value = true
@@ -239,7 +241,7 @@ async function share(): Promise<void> {
 
   <template v-else>
   <nav v-if="pools.length > 1" class="pools">
-    <button v-for="pool in pools" :key="pool.id" type="button" :class="{ on: pool.id === poolId }" @click="choosePool(pool.id)">
+    <button v-for="pool in pools" :key="pool.id" type="button" :class="{ on: pool.id === poolId }" @click="choosePool(pool.slug)">
       {{ pool.name }}
     </button>
   </nav>
