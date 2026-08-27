@@ -117,16 +117,20 @@ onMounted(async () => {
   }
 })
 
-watch(poolId, (id) => {
-  if (!id || !member.value) return
-  writeStored(localStorage, POOL_KEY, id)
-  heard = ''
-  void openDaily(id).catch((reason: unknown) => {
-    failure.value = reason instanceof Error ? reason.message : 'Could not reach the server.'
-  })
-  void fetchStandings()
-  void fetchDistribution()
-})
+watch(
+  [poolId, member],
+  ([id, allowed]) => {
+    if (!id || !allowed) return
+    writeStored(localStorage, POOL_KEY, id)
+    heard = ''
+    void openDaily(id).catch((reason: unknown) => {
+      failure.value = reason instanceof Error ? reason.message : 'Could not reach the server.'
+    })
+    void fetchStandings()
+    void fetchDistribution()
+  },
+  { immediate: true },
+)
 
 watch(state, async (next, previous) => {
   if (!next) return
