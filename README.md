@@ -25,7 +25,7 @@ The dev server proxies everything under `/api` to the backend, websocket include
 
 | Variable | What it does |
 |---|---|
-| `VITE_API_ORIGIN` | Where the API lives. `/api` in development, so the dev proxy handles it. In production set it to the full API origin. |
+| `VITE_API_ORIGINS` | Where the API lives, as comma separated `host=origin` pairs picked by the hostname the page is served from. An entry with no `host=` in front of it covers every host, which is what development uses. A host that matches nothing falls back to the first entry. |
 | `VITE_DEV_BACKEND` | What the dev proxy points at. Only read by `vite.config.ts`. |
 
 ## Scripts

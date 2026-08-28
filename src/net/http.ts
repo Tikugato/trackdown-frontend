@@ -14,7 +14,13 @@ import type {
   SuggestScope,
 } from './protocol'
 
-export const apiOrigin = (import.meta.env.VITE_API_ORIGIN ?? '').replace(/\/+$/, '')
+function pickApiOrigin(list: string): string {
+  const sites = list.split(',').map((entry) => entry.trim()).filter(Boolean)
+  const site = sites.find((entry) => entry.startsWith(`${location.hostname}=`)) ?? sites[0] ?? ''
+  return site.slice(site.indexOf('=') + 1).replace(/\/+$/, '')
+}
+
+export const apiOrigin = pickApiOrigin(import.meta.env.VITE_API_ORIGINS ?? '')
 export const socketUrl = new URL(`${apiOrigin}/ws`, location.origin).href.replace(/^http/, 'ws')
 
 export function avatarUrl(key: string | undefined): string {
